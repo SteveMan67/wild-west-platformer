@@ -83,7 +83,7 @@ const editor = {
     x: 0,
     y: 0
   },
-  tileSize: 16,
+  tileSize: 64,
   selectedTile: 1,
   map: null,
   tileset: []
@@ -121,10 +121,10 @@ function levelEditorLoop() {
   const { map, cam, tileSize, tileset} = editor
 
   const speed = 5
-  if (input.keys['w']) cam.y -= speed
-  if (input.keys['s']) cam.y += speed
-  if (input.keys['a']) cam.x -= speed
-  if (input.keys['d']) cam.x += speed
+  if (input.keys['w'] && cam.y >= 0) cam.y -= speed
+  if (input.keys['s'] && cam.y <= (map.h * tileSize) - canvas.height + 5) cam.y += speed
+  if (input.keys['a'] && cam.x >= 0) cam.x -= speed
+  if (input.keys['d'] && cam.x <= (map.w * tileSize) - canvas.width + 5) cam.x += speed
 
   const worldX = input.x + cam.x
   const worldY = input.y + cam.y
@@ -134,6 +134,7 @@ function levelEditorLoop() {
   if (input.down) {
      if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
       const idx = ty * map.w + tx
+      console.log(ty, tx)
       map.tiles[idx] = editor.selectedTile
      }
   }
@@ -142,9 +143,9 @@ function levelEditorLoop() {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   const startX = Math.floor(cam.x / tileSize)
-  const endX = startX + (canvas.width / tileSize)
+  const endX = startX + (canvas.width / tileSize) + 1
   const startY = Math.floor(cam.y / tileSize)
-  const endY = startY + (canvas.width / tileSize)
+  const endY = startY + (canvas.width / tileSize) + 1
   
   for (let y = startY; y < endY; y++) {
     for (let x = startX; x < endX; x++) {
@@ -168,6 +169,10 @@ function levelEditorLoop() {
   ctx.strokeRect(cursorScrX, cursorScrY, tileSize, tileSize)
 
   requestAnimationFrame(levelEditorLoop)
+}
+
+function logCurrentMapAsJSON() {
+  console.log(createMap(editor.map.w, editor.map.h, Array.from(editor.map.tiles)))
 }
 
 initEditor()
