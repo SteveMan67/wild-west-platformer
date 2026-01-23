@@ -21,6 +21,7 @@ function decodeRLE(rle) {
       out.push(pair)
     }
   }
+  return out
 }
 
 function loadMap(path) {
@@ -72,13 +73,39 @@ function createMap(width, height, data) {
   let mapLayer = {
     "type": "tilelayer",
     "name": "level",
-    "data": data
+    "data": rle
   }
   json.layers.push(mapLayer)
   return json
 }
 
-function loadTileset(manifestPath) {
+function getVariant(num) {
+  return num >> 4
+}
+
+function getTileId(num) {
+  return num & 15
+}
+
+async function loadStripTileset(jsonPath) {
+  return fetch(manifestPath) 
+    .then(res => res.json())
+    .then(manifest => {
+      const promises = manifest.files.map(filename => {
+        return new Promise((resolve, reject) => {
+          const img = new Image()
+          img.src = manifest.path + filename
+          img.onload = () => resolve(img)
+          img.onerror = reject
+        })
+      })
+
+      return Promise.all(promises)
+        .then(images => [null, ...images])
+    })
+}
+
+async function loadTileset(manifestPath) {
   return fetch(manifestPath)
     .then(res => res.json())
     .then(manifest => {
@@ -137,6 +164,28 @@ function initEditor() {
     }
     levelEditorLoop()
   })
+}
+
+function updateLevelSize(width, height) {
+  // need to update the array with new values or slice old ones 
+  // and also update editor object
+  // note: add new columns on the right of the map
+  // note: and new rows on top and same for removing
+  let tiles = Array.from(editor.map.tiles)
+  if (editor.width > width) {
+    for (let h = 0; h < editor.height; h++) {
+      tiles.splice((h * (width - 1)) + width - 1, editor.width - width)
+    }
+    const listLen = (width * height) - 1
+    tiles.splice(listLen, tiles.length - listLen)
+  } else if (editor.width < width) {
+    for (let h = 0; h < editor.height; h++) {
+
+    }
+  }
+
+  editor.width = width
+  editor.height = height
 }
 
 function levelEditorLoop() {
