@@ -9,6 +9,26 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 ctx.imageSmoothingEnabled = false
 canvas.style.imageRendering = 'pixelated'
 
+function toggleErase() {
+  if (editor.selectedTile == 0) {
+    editor.selectedTile = editor.lastSelectedTile
+  } else {
+    editor.selectedTile = 0
+  }
+}
+
+// page event listeners
+const eraserButton = document.querySelector('i.fa-solid.fa-eraser')
+
+eraserButton.addEventListener('click', () => {
+  toggleErase()
+})
+document.addEventListener('keypress', (e) => {
+  if (e.key == 'e') {
+    toggleErase()
+  }
+})
+
 function decodeRLE(rle) {
   const out = []
   for (let i = 0; i < rle.length; i++) {
@@ -49,10 +69,10 @@ function createMap(width, height, data) {
   json.height = height
   json.layers = []
   let rle = []
-  let runVal = data[0]
+  let runVal = data[0] >> 4
   let runCount = 1
   for (let i = 1; i < data.length; i++) {
-    const v = data[i]
+    const v = data[i] >> 4
     if (v === runVal) {
       runCount++
     } else {
@@ -109,6 +129,8 @@ function platformerLoop() {
 
 }
 
+const mode = "editor"
+
 const editor = {
   cam: {
     x: 0,
@@ -116,6 +138,7 @@ const editor = {
   },
   tileSize: 32,
   selectedTile: 1,
+  lastSelectedTile: 1,
   map: null,
   width: 100,
   height: 50,
@@ -172,9 +195,11 @@ function calculateAdjacencies(tiles) {
 
 function calculateAdjacency(tileIdx, tileId) {
   // calculate the adjacency for a given tile when it's placed
+  // bug: walls other than the top and bottom don't work
   let variant = 0
 
-  // top
+  tileId = (typeof tileId == 'number') ? tileId : editor.map.tiles[tileIdx] >> 4
+  if (tileId == 0) return 0
   if (tileIdx - editor.width >= 0) {
     if (editor.map.tiles[tileIdx - editor.width] !== 0) {
       variant += 1
@@ -218,6 +243,27 @@ function calculateAdjacency(tileIdx, tileId) {
   console.log(variant)
   return (tileId * 16) + variant
 
+}
+
+function calcAdjacentAdjacency(centerTileIdx) {
+  const tiles = editor.map.tiles
+  const centerVal = calculateAdjacency(centerTileIdx, editor.selectedTile)
+  tiles[centerTileIdx] = centerVal
+  const w = editor.width
+  const neighbors = []
+  if (centerTileIdx - w >= 0) neighbors.push(centerTileIdx - w)
+  if ((centerTileIdx % w) < w - 1 && centerTileIdx + 1 < tiles.length) neighbors.push(centerTileIdx + 1)
+  if ((centerTileIdx % w) > 0 && centerTileIdx - 1 >= 0) neighbors.push(centerTileIdx - 1)
+  if (centerTileIdx + w < tiles.length) neighbors.push(centerTileIdx + w)
+  
+  neighbors.forEach(n => {
+    const tileId = tiles[n] >> 4
+    if (tileId !== 0) {
+      tiles[n] = calculateAdjacency(n)
+    }
+  })
+
+  return centerVal
 }
 
 function updateLevelSize(width, height) {
@@ -283,7 +329,8 @@ function initEditor() {
   })
 }
 
-let mouseNotDown = true
+let mouseDown = false
+let lastIdx
 
 function levelEditorLoop() {
   const { map, cam, tileSize, tileset} = editor
@@ -299,16 +346,18 @@ function levelEditorLoop() {
   const ty = Math.floor(worldY / tileSize)
 
   if (input.down) {
-    if (mouseNotDown) {
+    const idx = ty * map.w + tx
+    if (!mouseDown) {
       if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
-       const idx = ty * map.w + tx
        console.log(ty, tx, idx)
-       map.tiles[idx] = calculateAdjacency(idx, editor.selectedTile)
+       calcAdjacentAdjacency(idx, editor.selectedTile)
       }
-      mouseNotDown = false
+    }
+    if (lastIdx !== idx) {
+      mouseDown = false
     }
   } else {
-    mouseNotDown = true
+    mouseDown = false
   }
   
   ctx.fillStyle = '#C29A62'
@@ -340,7 +389,9 @@ function levelEditorLoop() {
   ctx.strokeStyle = 'grey'
   ctx.strokeRect(cursorScrX, cursorScrY, tileSize, tileSize)
 
-  requestAnimationFrame(levelEditorLoop)
+  if (mode == 'editor') {
+    requestAnimationFrame(levelEditorLoop)
+  }
 }
 
 function logCurrentMapAsJSON() {
