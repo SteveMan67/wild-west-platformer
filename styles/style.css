@@ -28,6 +28,25 @@ body {
 
 .sidebar {
   grid-area: sidebar;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tile-selection {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+}
+
+.tile-selection img {
+  width: 60px;
+  height: 60px;
+  image-rendering: pixelated; 
+  margin-bottom: 20px;
 }
 
 .actions {

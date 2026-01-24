@@ -21,6 +21,7 @@ function toggleErase() {
 const eraserButton = document.querySelector('i.fa-solid.fa-eraser')
 const saveButton = document.querySelector('i.fa-regular.fa-floppy-disk')
 const importButton = document.querySelector('i.fa-solid.fa-file-import')
+const tileSelection = document.querySelector('.tile-selection')
 
 importButton.addEventListener('click', () => {
   console.log("hi")
@@ -369,6 +370,42 @@ function updateLevelSize(width, height) {
   editor.map.w = width
   editor.map.h = height
 }
+function addTileSelection() {
+  for (let i = 1; i < editor.tileset.length; i++) {
+    console.log('hi?')
+    let img = document.createElement('img')
+    img.classList.add('tile-select')
+    img.dataset.tile = i
+    let src
+    if (Array.isArray(editor.tileset[i])) {
+      const c = editor.tileset[i][0]
+      if (c instanceof HTMLCanvasElement) {
+        if (c.toBlob) {
+          c.toBlob(blob => {
+            const url = URL.createObjectURL(blob)
+            img.src = url
+            img.onload = () => URL.revokeObjectURL(url)
+          })
+        } else {
+          img.src = c.toDataURL()
+        }
+      } else if (c instanceof HTMLImageElement) {
+        img.src = c.src
+      }
+    } else {
+      if (editor.tileset[i] instanceof HTMLImageElement) {
+        img.src = editor.tileset[i].src
+      } else {
+        img.src = ''
+      }
+    }
+    console.log(img)
+    tileSelection.appendChild(img)
+    img.addEventListener('click', () => {
+      editor.selectedTile = Number(img.dataset.tile)
+    })
+  }
+}
 
 function initEditor() {
   window.addEventListener('keydown', e => input.keys[e.key] = true)
@@ -387,6 +424,7 @@ function initEditor() {
     editor.map = {
       w: 100, h: 50, tiles: new Uint16Array(5000)
     }
+    addTileSelection()
     levelEditorLoop()
   })
 }
