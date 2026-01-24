@@ -132,9 +132,11 @@ const editor = {
     x: 0,
     y: 0
   },
-  tileSize: 64,
+  tileSize: 10,
   selectedTile: 1,
   map: null,
+  width: 100,
+  height: 50,
   tileset: []
 }
 
@@ -143,6 +145,48 @@ const input = {
   y: 0,
   down: false,
   keys: {}
+}
+
+function updateLevelSize(width, height) {
+  // need to update the array with new values or slice old ones 
+  // and also update editor object
+  // note: add new columns on the right of the map
+  // note: and new rows on top and same for removing
+  let tiles = Array.from(editor.map.tiles)
+  if (editor.width > width) {
+    console.log("Shorter")
+    const diff = width - editor.width
+    for (let h = 0; h < editor.height; h++) {
+      // delete the end of the rows
+      tiles.splice((h * width) + width, editor.width - width)
+    }
+  } else if (editor.width < width) {
+    console.log("Longer")
+    // !!Working!!
+    const diff = Math.abs(width - editor.width)
+    console.log(diff)
+    for (let h = 0; h < editor.height; h++) {
+      tiles.splice(((h * width) + width - diff), 0, ...Array(diff).fill(0))
+    }
+  }
+  if (editor.height > height) {
+    console.log("shorter")
+    // !!Working!!
+    console.log((editor.height - height) * width)
+    tiles.splice(0, (editor.height - height) * width)
+  } else if (editor.height < height) {
+    console.log("taller")
+    // !!Working!!
+    Array((height - editor.height) * width).fill(0)
+    tiles.unshift(...Array((height - editor.height) * width).fill(0))
+  }
+  console.log(tiles.length, tiles.length === width * height)
+
+  editor.map.tiles = new Uint16Array(tiles)
+  editor.width = width
+  editor.height = height
+  editor.map.w = width
+  editor.map.h = height
 }
 
 function initEditor() {
@@ -160,32 +204,10 @@ function initEditor() {
   loadTileset('assets/tileset.json').then(images => {
     editor.tileset = images
     editor.map = {
-      w: 100, h: 50, tiles: new Uint16Array(100 * 50)
+      w: 100, h: 50, tiles: new Uint16Array(5000)
     }
     levelEditorLoop()
   })
-}
-
-function updateLevelSize(width, height) {
-  // need to update the array with new values or slice old ones 
-  // and also update editor object
-  // note: add new columns on the right of the map
-  // note: and new rows on top and same for removing
-  let tiles = Array.from(editor.map.tiles)
-  if (editor.width > width) {
-    for (let h = 0; h < editor.height; h++) {
-      tiles.splice((h * (width - 1)) + width - 1, editor.width - width)
-    }
-    const listLen = (width * height) - 1
-    tiles.splice(listLen, tiles.length - listLen)
-  } else if (editor.width < width) {
-    for (let h = 0; h < editor.height; h++) {
-
-    }
-  }
-
-  editor.width = width
-  editor.height = height
 }
 
 function levelEditorLoop() {
@@ -193,9 +215,9 @@ function levelEditorLoop() {
 
   const speed = 5
   if (input.keys['w'] && cam.y >= 0) cam.y -= speed
-  if (input.keys['s'] && cam.y <= (map.h * tileSize) - canvas.height + 5) cam.y += speed
+  if (input.keys['s'] && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed
   if (input.keys['a'] && cam.x >= 0) cam.x -= speed
-  if (input.keys['d'] && cam.x <= (map.w * tileSize) - canvas.width + 5) cam.x += speed
+  if (input.keys['d'] && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed
 
   const worldX = input.x + cam.x
   const worldY = input.y + cam.y
