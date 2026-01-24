@@ -21,6 +21,19 @@ function toggleErase() {
 const eraserButton = document.querySelector('i.fa-solid.fa-eraser')
 const saveButton = document.querySelector('i.fa-regular.fa-floppy-disk')
 
+saveButton.addEventListener('click', () => {
+  const json = createMap(editor.map.w, editor.map.h, Array.from(editor.map.tiles))
+  const text = JSON.stringify(json, null, 2)
+  const blob = new Blob([text], {type: 'application/json'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'map.json'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+})
 eraserButton.addEventListener('click', () => {
   toggleErase()
 })
