@@ -1,17 +1,17 @@
 {
   "path": "assets/tiles/",
-  "files": [
-    "ground.png"
-  ],
-  "categories": {
-    "blocks": [
-      "ground.png"
-    ],
-    "enemies": [],
-    "fluids": [],
-    "powerups": [],
-    "hazards": [],
-    "collectibles": [],
-    "mechanics": []
-  }
+  "tiles": [
+    {
+      "id": 0,
+      "name": "air",
+      "type": "empty"
+    },
+    {
+      "id": 1,
+      "name": "Ground",
+      "file": "ground.png",
+      "category": "blocks",
+      "type": "adjacency"
+    }
+  ]
 }

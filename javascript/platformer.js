@@ -209,17 +209,26 @@ async function loadTileset(manifestPath) {
   return fetch(manifestPath)
     .then(res => res.json())
     .then(manifest => {
-      const promises = manifest.files.map(filename => {
+
+      const promises = manifest.tiles.map(tileData => {
+
+        if (!tileData.file) return Promise.resolve(tileData)
         return new Promise((resolve, reject) => {
           const img = new Image()
-          img.src = manifest.path + filename
-          img.onload = () => resolve(img)
+          img.src = manifest.path + tileData.file
+          img.onload = () => resolve({...tileData, image: img})
           img.onerror = reject
         })
       })
 
       return Promise.all(promises)
-        .then(images => [null, ...images])
+        .then(items => {
+          const tileset = []
+          items.forEach(item => {
+            tileset[item.id] = item
+          })
+          return tileset
+        })
     })
 }
 
@@ -277,25 +286,27 @@ function splitStripImages(tileset) {
   // split strip images 
   const newTileset = []
   tileset.forEach(tile => {
-    if (isStrip(tile)) {
+    if (!tile) return
+    if (tile.type === 'adjacency' && tile.image) {
       // split the strip into different pieces here 
-      const h = tile.naturalHeight
-      const w = tile.naturalWidth
+      const h = tile.image.naturalHeight
+      const w = tile.image.naturalWidth
       const sublist = []
       for (let i = 0; i < 16; i++) {
         const c = document.createElement('canvas')
         c.width = h
         c.height = h
         const ctx = c.getContext('2d')
-        ctx.drawImage(tile, i * h, 0, h, h, 0, 0, h, h)
+        ctx.drawImage(tile.image, i * h, 0, h, h, 0, 0, h, h)
 
         sublist.push(c)
       }
-      newTileset.push(sublist)
+      newTileset[tile.id] = { ...tile, images: sublist }
     } else {
-      newTileset.push(tile)
+      newTileset[tile.id] = tile
     }
   })
+  console.log(tileset, newTileset)
   return newTileset
 }
 
@@ -495,11 +506,11 @@ function drawMap(tileSize = editor.tileSize) {
       const tileId = raw >> 4
       const scrX = Math.floor((x * tileSize) - cam.x)
       const scrY = Math.floor((y * tileSize) - cam.y)
-      
-      if (tileId > 0 && Array.isArray(tileset[tileId])) {
-        ctx.drawImage(tileset[tileId][(raw & 15)], scrX, scrY, tileSize, tileSize)
-      } else if (tileId > 0 && !Array.isArray(tileset[tileId])) {
-        ctx.drawImage(tileset[tileId], scrX, scrY, tileSize, tileSize)
+      const selectedTile = tileset[tileId]
+      if (selectedTile.type == 'adjacency') {
+        ctx.drawImage(selectedTile.images[(raw & 15)], scrX, scrY, tileSize, tileSize)
+      } else if (selectedTile.type == "adjacency") {
+        ctx.drawImage(selectedTile.image, scrX, scrY, tileSize, tileSize)
       }
     }
   } 
@@ -523,7 +534,7 @@ function checkCollision(x, y, w, h) {
 }
 
 function updatePhysics() {
-  player.vy += player.inertia * 0.8
+  player.vy += player.inertia 
   if (player.vx < 0) {
     player.vx += player.inertia * 0.45
   } else if (player.vx > 0) {
@@ -662,11 +673,17 @@ function levelEditorLoop() {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
   drawMap()
-  
 
   const cursorScrX = (tx * tileSize) - cam.x
   const cursorScrY = (ty * tileSize) - cam.y
-  const img = Array.isArray(tileset[editor.selectedTile]) ? tileset[editor.selectedTile][calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15] : tileset[editor.selectedTile]
+  let img
+  const selectedTileOfTileset = tileset.find(tile => tile.id == editor.selectedTile)
+  if(selectedTileOfTileset.type == "adjacency") {
+    img = selectedTileOfTileset.images[calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15]
+  } else {
+    img = selectedTileOfTileset.image
+  }
+
   if (img) {
     ctx.save()
     ctx.globalAlpha = 0.5
