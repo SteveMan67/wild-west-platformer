@@ -17,14 +17,46 @@ function toggleErase() {
   }
 }
 
+function zoomMap(zoomDirectionIsIn) {
+  const currentZoom = editor.tileSize
+  let newZoom = editor.tileSize
+  const zooms = [16, 25, 32, 40, 60, 80, 100]
+  const currentZoomIndex = zooms.indexOf(currentZoom)
+  console.log(currentZoomIndex)
+  if (zoomDirectionIsIn) {
+    if (currentZoomIndex !== 0) {
+      newZoom = zooms[currentZoomIndex - 1]
+    } else {
+      newZoom = currentZoom
+    }
+  } else {
+    if (currentZoomIndex < zooms.length - 1) {
+      newZoom = zooms[currentZoomIndex + 1]
+    } else {
+      newZoom = currentZoom
+    }
+  }
+  console.log(newZoom)
+  editor.tileSize = newZoom
+}
+
 // page event listeners
 const eraserButton = document.querySelector('i.fa-solid.fa-eraser')
 const saveButton = document.querySelector('i.fa-regular.fa-floppy-disk')
 const importButton = document.querySelector('i.fa-solid.fa-file-import')
 const tileSelection = document.querySelector('.tile-selection')
+const zoomIn = document.querySelector('i.fa-solid.fa-plus')
+const zoomOut = document.querySelector('i.fa-solid.fa-minus')
+
+zoomIn.addEventListener('click', () => {
+  zoomMap(false)
+})
+
+zoomOut.addEventListener('click', () => {
+  zoomMap(true)
+})
 
 importButton.addEventListener('click', () => {
-  console.log("hi")
   let input = document.createElement('input')
   input.type = 'file'
   input.id = 'mapFileInput'
@@ -75,7 +107,6 @@ function decodeRLE(rle) {
 }
 
 function importMap(e) {
-  console.log(e)
   const file = e.target.files && e.target.files[0]
   if (!file) return 
   const reader = new FileReader()
@@ -106,7 +137,6 @@ function loadMap(path) {
   return fetch(path)
     .then(response => response.json())
     .then(json => {
-      console.log(json)
       const tileLayer = json.layers.find(l => l.type === "tilelayer")
       const raw = decodeRLE(tileLayer.data)
       if (raw.length !== json.width * json.height) {
@@ -115,7 +145,6 @@ function loadMap(path) {
       editor.width = json.width
       editor.height = json.height
       let tiles = calculateAdjacencies(raw, json.width, json.height)
-      console.log(tiles)
       tiles = new Uint16Array(tiles)
       const map = {
         tiles, 
@@ -218,7 +247,6 @@ const input = {
 function isStrip(img) {
   if (img) {
     const w = img.naturalWidth, h = img.naturalHeight
-    console.log(w, h)
     if (w && h) {
       return w == h * 16
     }
@@ -230,7 +258,6 @@ function splitStripImages(tileset) {
   const newTileset = []
   tileset.forEach(tile => {
     if (isStrip(tile)) {
-      console.log("found strip")
       // split the strip into different pieces here 
       const h = tile.naturalHeight
       const w = tile.naturalWidth
@@ -336,33 +363,26 @@ function updateLevelSize(width, height) {
   // note: and new rows on top and same for removing
   let tiles = Array.from(editor.map.tiles)
   if (editor.width > width) {
-    console.log("Shorter")
     const diff = width - editor.width
     for (let h = 0; h < editor.height; h++) {
       // delete the end of the rows
       tiles.splice((h * width) + width, editor.width - width)
     }
   } else if (editor.width < width) {
-    console.log("Longer")
     // !!Working!!
     const diff = Math.abs(width - editor.width)
-    console.log(diff)
     for (let h = 0; h < editor.height; h++) {
       tiles.splice(((h * width) + width - diff), 0, ...Array(diff).fill(0))
     }
   }
   if (editor.height > height) {
-    console.log("shorter")
     // !!Working!!
-    console.log((editor.height - height) * width)
     tiles.splice(0, (editor.height - height) * width)
   } else if (editor.height < height) {
-    console.log("taller")
     // !!Working!!
     Array((height - editor.height) * width).fill(0)
     tiles.unshift(...Array((height - editor.height) * width).fill(0))
   }
-  console.log(tiles.length, tiles.length === width * height)
 
   editor.map.tiles = new Uint16Array(tiles)
   editor.width = width
@@ -372,7 +392,6 @@ function updateLevelSize(width, height) {
 }
 function addTileSelection() {
   for (let i = 1; i < editor.tileset.length; i++) {
-    console.log('hi?')
     let img = document.createElement('img')
     img.classList.add('tile-select')
     img.dataset.tile = i
@@ -399,7 +418,6 @@ function addTileSelection() {
         img.src = ''
       }
     }
-    console.log(img)
     tileSelection.appendChild(img)
     img.addEventListener('click', () => {
       editor.selectedTile = Number(img.dataset.tile)
@@ -450,7 +468,6 @@ function levelEditorLoop() {
     const idx = ty * map.w + tx
     if (!mouseDown) {
       if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
-       console.log(ty, tx, idx)
        calcAdjacentAdjacency(idx, editor.selectedTile)
       }
     }
@@ -487,7 +504,6 @@ function levelEditorLoop() {
 
   const cursorScrX = (tx * tileSize) - cam.x
   const cursorScrY = (ty * tileSize) - cam.y
-  console.log(calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15)
   const img = Array.isArray(tileset[editor.selectedTile]) ? tileset[editor.selectedTile][calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15] : tileset[editor.selectedTile]
   if (img) {
     ctx.save()

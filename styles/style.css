@@ -34,6 +34,18 @@ body {
   justify-content: space-between;
 }
 
+.zoom {
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+  align-items: center;
+}
+
+.zoom i {
+  font-size: 30px;
+  margin: 15px auto;
+}
+
 .tile-selection {
   height: 100%;
   display: flex;
