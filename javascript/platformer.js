@@ -483,12 +483,22 @@ function levelEditorLoop() {
         ctx.drawImage(tileset[tileId], scrX, scrY, tileSize, tileSize)
       }
     }
-  }
+  } 
 
   const cursorScrX = (tx * tileSize) - cam.x
   const cursorScrY = (ty * tileSize) - cam.y
-  ctx.strokeStyle = 'grey'
-  ctx.strokeRect(cursorScrX, cursorScrY, tileSize, tileSize)
+  console.log(calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15)
+  const img = Array.isArray(tileset[editor.selectedTile]) ? tileset[editor.selectedTile][calculateAdjacency(ty * map.w + tx, editor.selectedTile) & 15] : tileset[editor.selectedTile]
+  if (img) {
+    ctx.save()
+    ctx.globalAlpha = 0.5
+    ctx.drawImage(img, cursorScrX, cursorScrY, tileSize, tileSize)
+    ctx.restore()
+  } else {e
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(cursorScrX, cursorScrY, tileSize, tileSize)
+  }
+  ctx.globalAlpha = 1
 
   if (mode == 'editor') {
     requestAnimationFrame(levelEditorLoop)
