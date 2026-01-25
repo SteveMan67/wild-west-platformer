@@ -22,7 +22,6 @@ function zoomMap(zoomDirectionIsIn) {
   let newZoom = editor.tileSize
   const zooms = [16, 25, 32, 40, 60, 80, 100]
   const currentZoomIndex = zooms.indexOf(currentZoom)
-  console.log(currentZoomIndex)
   if (zoomDirectionIsIn) {
     if (currentZoomIndex !== 0) {
       newZoom = zooms[currentZoomIndex - 1]
@@ -36,7 +35,6 @@ function zoomMap(zoomDirectionIsIn) {
       newZoom = currentZoom
     }
   }
-  console.log(newZoom)
   editor.tileSize = newZoom
 }
 
@@ -88,6 +86,14 @@ eraserButton.addEventListener('click', () => {
 document.addEventListener('keypress', (e) => {
   if (e.key == 'e') {
     toggleErase()
+  } else if (e.key == 'p') {
+    console.log("switching modes")
+    mode = mode === 'editor' ? 'play' : 'editor'
+    if (mode == 'play') {
+      platformerLoop()
+    } else {
+      levelEditorLoop()
+    }
   }
 })
 
@@ -221,13 +227,27 @@ function platformerLoop() {
 
 }
 
-const mode = "editor"
+let mode = "editor"
+
+const player = {
+  vy: 0,
+  vx: 0, 
+  x: 0, 
+  y: 0,
+  speed: 4,
+  jump: 10,
+  w: 30,
+  h: 30,
+  grounded: false
+}
 
 const editor = {
   cam: {
     x: 0,
     y: 0
   },
+  playerSpawn: {x: 0, y: 0},
+  lastCheckpointSpawn: {x: 0, y: 0},
   tileSize: 32,
   selectedTile: 1,
   lastSelectedTile: 1,
@@ -447,12 +467,131 @@ function initEditor() {
   })
 }
 
+function drawMap() {
+  const { map, cam, tileSize, tileset} = editor
+  
+  const startX = Math.floor(cam.x / tileSize)
+  const endX = startX + (canvas.width / tileSize) + 1
+  const startY = Math.floor(cam.y / tileSize)
+  const endY = startY + (canvas.width / tileSize) + 1
+  
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      if (x < 0 || x >= map.w || y < 0 || y >= map.h) continue
+      const raw = map.tiles[y * map.w + x]
+      const tileId = raw >> 4
+      const scrX = (x * tileSize) - cam.x
+      const scrY = (y * tileSize) - cam.y
+      
+      if (tileId > 0 && Array.isArray(tileset[tileId])) {
+        ctx.drawImage(tileset[tileId][(raw & 15)], scrX, scrY, tileSize, tileSize)
+      } else if (tileId > 0 && !Array.isArray(tileset[tileId])) {
+        ctx.drawImage(tileset[tileId], scrX, scrY, tileSize, tileSize)
+      }
+    }
+  } 
+}
+
+function checkCollision(x, y, w, h) {
+  const startX = Math.floor(x / editor.tileSize)
+  const endX = Math.floor((x + w - 0.01) / editor.tileSize)
+  const startY = Math.floor(y / editor.tileSize)
+  const endY = Math.floor((y + h - 0.01) / editor.tileSize)
+
+  for (let py = startY; py <= endY; py++) {
+    for (let px = startX; px <= endX; px++) {
+      if (px < 0 || px >= editor.map.w || py < 0 || py >= editor.map.h) continue
+      const idx = py * editor.map.w + px
+      const tileId = editor.map.tiles[idx] >> 4
+      if (tileId !== 0) return true
+    }
+  }
+  return false
+}
+
+function updatePhysics() {
+  player.vy += 0.6
+  if (player.vx < 0) {
+    player.vx += 0.5
+  } else if (player.vx > 0) {
+    player.vx -= 0.5
+  }
+
+  if (input.keys['w'] && player.grounded || input.keys[' '] && player.grounded) player.vy = -player.jump
+  if (input.keys['a']) player.vx = -player.speed
+  if (input.keys['d']) player.vx = player.speed
+
+  player.x += player.vx
+  if (checkCollision(player.x, player.y, player.w, player.h)) {
+    if (player.vx > 0) {
+      player.x = (Math.floor((player.x + player.w) / editor.tileSize) * editor.tileSize) - player.w
+    } else if (player.vx < 0) {
+      player.x = (Math.floor(player.x / editor.tileSize) + 1) * editor.tileSize
+    }
+    player.vx = 0
+  }
+
+  player.y += player.vy
+  player.grounded = false
+
+  if (checkCollision(player.x, player.y, player.w, player.h)) {
+    if (player.vy > 0) {
+      player.y = (Math.floor((player.y + player.h) / editor.tileSize) * editor.tileSize) - player.h
+      player.grounded = true
+    } else if (player.vy < 0) {
+      player.y = (Math.floor(player.y / editor.tileSize) + 1) * editor.tileSize
+    }
+    player.vy = 0
+  } else {
+    player.grounded = false
+  }
+
+  if (player.y > editor.map.h * editor.tileSize) {
+    player.vy = 0
+    player.vx = 0
+    player.x = editor.playerSpawn.x
+    player.y = editor.playerSpawn.y
+  }
+}
+
+function platformerLoop() {
+
+  updatePhysics()
+
+  editor.cam.x = player.x - (canvas.width / 2)
+  editor.cam.y = player.y - (canvas.height / 2)
+  if (editor.cam.y < 0) {
+    editor.cam.y = 0
+  } else if (editor.cam.y > (editor.map.h * editor.tileSize) - canvas.height) {
+    editor.cam.y = (editor.map.h * editor.tileSize) - canvas.height
+  }
+  if (editor.cam.x < 0) {
+    editor.cam.x = 0
+  } else if (editor.cam.x > (editor.map.w * editor.tileSize) - canvas.width) {
+    editor.cam.x = (editor.map.w * editor.tileSize) - canvas.width
+  }
+
+ 
+  ctx.fillStyle = '#C29A62'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  drawMap()
+
+  ctx.fillStyle = 'black'
+  ctx.fillRect(player.x - editor.cam.x, player.y - editor.cam.y, player.w, player.h)
+
+  if (mode == 'play') {
+    requestAnimationFrame(platformerLoop)
+  }
+}
+
 let mouseDown = false
 let lastIdx
 let once = true
 
 function levelEditorLoop() {
   const { map, cam, tileSize, tileset} = editor
+
   const speed = 10
   if (input.keys['w'] && cam.y >= 0) cam.y -= speed
   if (input.keys['s'] && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed
@@ -481,26 +620,8 @@ function levelEditorLoop() {
   ctx.fillStyle = '#C29A62'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  const startX = Math.floor(cam.x / tileSize)
-  const endX = startX + (canvas.width / tileSize) + 1
-  const startY = Math.floor(cam.y / tileSize)
-  const endY = startY + (canvas.width / tileSize) + 1
+  drawMap()
   
-  for (let y = startY; y < endY; y++) {
-    for (let x = startX; x < endX; x++) {
-      if (x < 0 || x >= map.w || y < 0 || y >= map.h) continue
-      const raw = map.tiles[y * map.w + x]
-      const tileId = raw >> 4
-      const scrX = (x * tileSize) - cam.x
-      const scrY = (y * tileSize) - cam.y
-      
-      if (tileId > 0 && Array.isArray(tileset[tileId])) {
-        ctx.drawImage(tileset[tileId][(raw & 15)], scrX, scrY, tileSize, tileSize)
-      } else if (tileId > 0 && !Array.isArray(tileset[tileId])) {
-        ctx.drawImage(tileset[tileId], scrX, scrY, tileSize, tileSize)
-      }
-    }
-  } 
 
   const cursorScrX = (tx * tileSize) - cam.x
   const cursorScrY = (ty * tileSize) - cam.y
