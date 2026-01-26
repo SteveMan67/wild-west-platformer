@@ -654,8 +654,8 @@ function killPlayer() {
   player.vy = 0
   player.vx = 0
   if (player.lastCheckpointSpawn.y !== 0 && player.lastCheckpointSpawn.x !== 0) {
-    player.x = editor.lastCheckpointSpawn.x * player.tileSize
-    player.y = editor.lastCheckpointSpawn.y * player.tileSize
+    player.x = player.lastCheckpointSpawn.x * player.tileSize
+    player.y = player.lastCheckpointSpawn.y * player.tileSize
   } else {
     player.x = editor.playerSpawn.x * player.tileSize
     player.y = editor.playerSpawn.y * player.tileSize
@@ -724,6 +724,9 @@ function mechanics(tileId, tx, ty, x, y, w, h) {
   if (mechanics.includes("end")) {
     endLevel()
   }
+  if (mechanics.includes("checkpoint")) {
+    player.lastCheckpointSpawn = { x: tx, y: ty }
+  }
 }
 
 function checkCollision(x, y, w, h) {
@@ -750,6 +753,9 @@ function checkCollision(x, y, w, h) {
           continue
         }
         if (tile && tile.mechanics && tile.mechanics.includes("hidden")) {
+          continue
+        }
+        if (tile && tile.mechanics && tile.mechanics.includes("noCollision")) {
           continue
         }
         return true

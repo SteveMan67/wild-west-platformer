@@ -45,7 +45,8 @@
       "type": "standalone",
       "triggerAdjacency": false,
       "mechanics": [
-        "checkpoint"
+        "checkpoint",
+        "noCollision"
       ]
     },
     {
