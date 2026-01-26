@@ -893,24 +893,28 @@ function levelEditorLoop() {
     const idx = ty * map.w + tx
     if (!mouseDown) {
       if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
+        // set a limit on tiles with a mechanic of "onePerLevel"
         let tileLimitPlaced = false
         if (editor.limitedPlacedTiles.includes(editor.selectedTile)) {
           tileLimitPlaced = true
         }
         if (editor.tileset[editor.selectedTile].mechanics) {
-          if (editor.tileset[editor.selectedTile].mechanics.includes("onePerLevel")) {
+          if (editor.tileset[editor.selectedTile].mechanics.includes("onePerLevel") && !editor.limitedPlacedTiles.includes(editor.selectedTile)) {
             editor.limitedPlacedTiles.push(editor.selectedTile)
           }
           if (tileset[editor.selectedTile].mechanics.includes("spawn")) {
             editor.playerSpawn = { x: tx, y: ty}
           }
         }
+        console.log(tileLimitPlaced)
         if (tileset[editor.selectedTile].type == "adjacency" && !tileLimitPlaced) {
           calcAdjacentAdjacency(idx, editor.selectedTile)
         } else if (tileset[editor.selectedTile].type == 'rotation' && !tileLimitPlaced) {
           editor.map.tiles[idx] = (editor.selectedTile * 16) + editor.currentRotation
-        } else if (!tileLimitPlaced){
-          console.log(idx, editor.selectedTile)
+        } else if (tileset[editor.selectedTile].type == 'empty' ) {
+          editor.limitedPlacedTiles = editor.limitedPlacedTiles.filter(f => f !== editor.lastSelectedTile)
+          calcAdjacentAdjacency(idx, editor.selectedTile)
+        } else if (!tileLimitPlaced) {
           calcAdjacentAdjacency(idx, editor.selectedTile)
         }
 
