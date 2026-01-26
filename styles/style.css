@@ -11,7 +11,7 @@ body {
   width: 100vw;
   height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 80px;
+  grid-template-columns: 1fr auto;
   grid-template-rows: 80px 1fr;
   grid-template-areas: 
     "topbar topbar"
@@ -30,8 +30,49 @@ body {
   grid-area: sidebar;
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-between;
+  overflow: scroll;
+  scrollbar-width: none;
+}
+
+.sidebar-two {
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-one {
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  overflow-y: scroll;
+  scrollbar-width: none;
+}
+
+.category-blocks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+}
+.category-blocks * {
+  margin-bottom: 30px;
+  height: 50px;
+  width: 50px;
+  padding: 0 15px;
+  image-rendering: pixelated;
+}
+
+.categories {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  justify-self: end;
 }
 
 .zoom {

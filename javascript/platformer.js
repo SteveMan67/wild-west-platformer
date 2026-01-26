@@ -487,10 +487,12 @@ function updateLevelSize(width, height) {
   editor.map.h = height
 }
 function addTileSelection() {
+  const categoryBlocks = document.querySelector('.category-blocks')
   for (let i = 1; i < editor.tileset.length; i++) {
     let img = document.createElement('img')
     img.classList.add('tile-select')
     img.dataset.tile = i
+    img.dataset.category = editor.tileset[i].category
     let src
     if (editor.tileset[i].type == 'rotation' || editor.tileset[i].type == 'adjacency') {
       const c = editor.tileset[i].images[0]
@@ -514,7 +516,7 @@ function addTileSelection() {
         img.src = ''
       }
     }
-    tileSelection.appendChild(img)
+    categoryBlocks.appendChild(img)
     img.addEventListener('mousedown', (e) => {
       e.preventDefault()
       editor.selectedTile = Number(img.dataset.tile)
