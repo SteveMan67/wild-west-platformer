@@ -9,6 +9,14 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 ctx.imageSmoothingEnabled = false
 canvas.style.imageRendering = 'pixelated'
 
+function updateCanvasSize() {
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = rect.width
+  canvas.height = rect.height
+  ctx.imageSmoothingEnabled = false
+  canvas.style.imageRendering = 'pixelated'
+}
+
 function toggleErase() {
   if (editor.selectedTile == 0) {
     editor.selectedTile = editor.lastSelectedTile
@@ -46,6 +54,10 @@ const importButton = document.querySelector('i.fa-solid.fa-file-import')
 const tileSelection = document.querySelector('.tile-selection')
 const zoomIn = document.querySelector('i.fa-solid.fa-plus')
 const zoomOut = document.querySelector('i.fa-solid.fa-minus')
+
+window.addEventListener('resize', () => {
+  updateCanvasSize()
+})
 
 zoomIn.addEventListener('click', () => {
   zoomMap(false)
@@ -542,6 +554,7 @@ function init() {
       w: 100, h: 50, tiles: new Uint16Array(5000)
     }
     addTileSelection()
+    updateCanvasSize()
     levelEditorLoop()
   })
 }
