@@ -51,7 +51,7 @@ function changeSelectedTile(up) {
   currentSelectedTiles = Array.from(currentSelectedTiles).filter(f => f.style.display !== "none")
   if (currentSelectedTiles.length !== 0) {
     // moving up works!
-    editor.selectedTile = up ? Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) + 1) % currentSelectedTiles.length].dataset.tile) : Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) - 1 + currentSelectedTiles.length) % currentSelectedTiles.length].dataset.tile)
+    editor.selectedTile = !up ? Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) + 1) % currentSelectedTiles.length].dataset.tile) : Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) - 1 + currentSelectedTiles.length) % currentSelectedTiles.length].dataset.tile)
   }
 }
 
@@ -86,6 +86,27 @@ const zoomIn = document.querySelector('.plus')
 const zoomOut = document.querySelector('.minus')
 const categories = document.querySelectorAll('.category')
 const play = document.querySelector(".play")
+
+const jumpHeightSlider = document.querySelector('#jump-height-input')
+const verticalInertiaSlider = document.querySelector('#vertical-inertia-input')
+const jumpWidthSlider = document.querySelector('#jump-width-input')
+const horizontalInertiaSlider = document.querySelector('#horizontal-inertia-input')
+
+jumpHeightSlider.addEventListener('input', () => {
+  player.jumpHeight = Number(jumpHeightSlider.value)
+})
+
+verticalInertiaSlider.addEventListener('input', () => {
+  player.yInertia = Number(verticalInertiaSlider.value)
+})
+
+jumpWidthSlider.addEventListener('input', () => {
+  player.jumpWidth = Number(jumpWidthSlider.value)
+})
+
+horizontalInertiaSlider.addEventListener('input', () => {
+  player.xInertia = Number(horizontalInertiaSlider.value)
+})
 
 categories.forEach(category => {
   category.addEventListener('click', () => {
@@ -211,6 +232,10 @@ function importMap(e) {
   reader.onerror = () => console.error('failed to read file', reader.error)
   reader.onload = () => {
     const json = JSON.parse(reader.result)
+    player.jumpHeight = json.jumpHeight
+    player.jumpWidth = json.jumpWidth
+    player.yInertia = json.yInertia
+    player.xInertia = json.xInertia
     const tileLayer = json.layers.find(l => l.type === "tilelayer")
     const rotationLayer = json.layers.find(l => l.type === "rotation")
     const rawRotationLayer = decodeRLE(rotationLayer.data)
@@ -300,6 +325,10 @@ function createMap(width, height, data) {
   const json = {}
   json.width = width
   json.height = height
+  json.jumpHeight = player.jumpHeight
+  json.yInertia = player.yInertia
+  json.jumpWidth = player.jumpWidth
+  json.xInertia = playeer.xInertia
   json.layers = []
   const tileIdRLE = encodeRLE(data.map(id => id >> 4))
   let mapLayer = {

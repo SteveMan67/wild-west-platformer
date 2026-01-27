@@ -104,7 +104,6 @@ body {
 .categories div.active::after {
   content: '';
   position: absolute;
-  z-index: 1;
   transform: translateY(175%) translateX(-76px) rotate(45deg);
   width: 10px;
   height: 10px;
@@ -213,7 +212,7 @@ i::before {
 }
 
 .background {
-  z-index: 0;
+  z-index: 2;
   background-color: rgba(0, 0, 0, 0.5);
   position: fixed;
   top: 0;
@@ -223,9 +222,11 @@ i::before {
 }
 
 .menu-content {
-  z-index: 1;
+  z-index: 3;
   background-color: #C29A62;
   border-radius: 20px;
+  min-height: 400px;
+  user-select: none;
 }
 
 input[type="radio"] {
@@ -246,7 +247,7 @@ input[type="radio"] {
 }
 
 .tabs {
-  margin: 15px 30px 15px 30px;
+  margin: 15px 20px 15px 20px;
   border-bottom: 3px solid black;
 }
 
@@ -278,15 +279,18 @@ input[type="radio"] {
   cursor: pointer
 }
 
+
 .tabs li:has(img) {
-  width: 25px;
+  display: flex;
+  justify-content: end;
+  width: 40px;
 }
 
 .menu-item {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  margin: 30px 40px;
+  margin: 30px 20px;
   align-items: center;
 }
 
@@ -375,4 +379,32 @@ input[type="radio"] {
 .menu-content input[type="radio"]:nth-of-type(4):checked ~ .tab-content .tab:nth-of-type(4),
 .menu-content input[type="radio"]:nth-of-type(5):checked ~ .tab-content .tab:nth-of-type(5) {
   display: block;
+}
+
+.keyboard-shortcuts {
+  margin: 0 20px;
+}
+
+.keyboard-shortcuts ul {
+  list-style-type: none;
+  margin: 10px;
+  padding: 0;
+}
+
+.keyboard-shortcuts p {
+  font-size: 25px;
+  margin: 10px;
+}
+
+span.keyboard-shortcut {
+  border: 2px solid black;
+  padding: 0 5px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: black;
+}
+
+.keyboard-shortcuts li {
+  padding: 5px;
+  font-size: 18px;
 }
