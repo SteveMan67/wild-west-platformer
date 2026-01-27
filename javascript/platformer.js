@@ -47,6 +47,15 @@ function zoomMap(zoomDirectionIsIn) {
   editor.tileSize = newZoom
 }
 
+function changeSelectedTile(up) {
+  let currentSelectedTiles = document.querySelectorAll(".tile-select-container")
+  currentSelectedTiles = Array.from(currentSelectedTiles).filter(f => f.style.display !== "none")
+  if (currentSelectedTiles.length !== 0) {
+    // moving up works!
+    editor.selectedTile = up ? Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) + 1) % currentSelectedTiles.length].dataset.tile) : Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) - 1 + currentSelectedTiles.length) % currentSelectedTiles.length].dataset.tile)
+  }
+}
+
 function sortByCategory(category) {
   let tileCount = 0
   const tileSelects = document.querySelectorAll('.tile-select-container')
@@ -96,6 +105,14 @@ categories.forEach(category => {
       if (tileCount !== 0) category.classList.add('active')
     }
   })
+})
+
+document.addEventListener('wheel', (e) => {
+  if (e.wheelDelta > 0) {
+    changeSelectedTile(true)
+  } else {
+    changeSelectedTile(false)
+  }
 })
 
 window.addEventListener('resize', () => {
