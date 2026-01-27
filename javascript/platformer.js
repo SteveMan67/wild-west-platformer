@@ -211,24 +211,32 @@ function importMap(e) {
   const reader = new FileReader()
   reader.onerror = () => console.error('failed to read file', reader.error)
   reader.onload = () => {
-    try {
-      const json = JSON.parse(reader.result)
-      const tileLayer = json.layers.find(l => l.type === 'tilelayer')
-      let raw = decodeRLE(tileLayer.data)
-      raw = raw.map(id => id << 4)
-      editor.width = json.width
-      editor.height = json.height
-      let tiles = calculateAdjacencies(raw, json.width, json.height)
-      tiles = new Uint16Array(tiles)
-      const map = {
-        tiles, 
-        w: json.width,
-        h: json.height
-      }
-      editor.map = map
-    } catch {
-      console.error('invalid map file')
+    const json = JSON.parse(reader.result)
+    const tileLayer = json.layers.find(l => l.type === "tilelayer")
+    const rotationLayer = json.layers.find(l => l.type === "rotation")
+    const rawRotationLayer = decodeRLE(rotationLayer.data)
+    let rawTileLayer = decodeRLE(tileLayer.data)
+    if (rawTileLayer.length !== json.width * json.height) {
+      console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height)
     }
+    rawTileLayer = rawTileLayer.map(id => id << 4)
+    rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height)
+    console.log(rawTileLayer)
+    for (let i = 0; i < rawTileLayer.length; i++) {
+      if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
+        rawTileLayer[i] += rawRotationLayer[i]
+        console.log(rawTileLayer[i] >> 4, rawTileLayer[i] & 3, rawTileLayer[i], i)
+      }
+    }
+    editor.width = json.width
+    editor.height = json.height
+    tiles = new Uint16Array(rawTileLayer)
+    const map = {
+      tiles, 
+      w: json.width,
+      h: json.height
+    }
+    editor.map = map
   }
   reader.readAsText(file)
 }
@@ -238,14 +246,21 @@ function loadMap(path) {
     .then(response => response.json())
     .then(json => {
       const tileLayer = json.layers.find(l => l.type === "tilelayer")
-      const raw = decodeRLE(tileLayer.data)
-      if (raw.length !== json.width * json.height) {
-        console.warn('readData: data length not expected value', raw.length, json.width * json.height)
+      const rotationLayer = json.layers.find(l => l.type === "rotation")
+      const rawRotationLayer = decodeRLE(rotationLayer)
+      const rawTileLayer = decodeRLE(tileLayer.data)
+      if (rawTileLayer.length !== json.width * json.height) {
+        console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height)
       }
-      raw = raw.map(id => id << 4)
+      rawTileLayer = rawTileLayer.map(id => id << 4)
+      for (let i = 0; i < rawTileLayer.length; i++) {
+        if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
+          rawTileLayer[i] = rawTileLayer[i] + rawRotationLayer[i]
+        }
+      }
       editor.width = json.width
       editor.height = json.height
-      let tiles = calculateAdjacencies(raw, json.width, json.height)
+      let tiles = calculateAdjacencies(rawTileLayer, json.width, json.height)
       tiles = new Uint16Array(tiles)
       const map = {
         tiles, 
@@ -256,16 +271,12 @@ function loadMap(path) {
     })
 }
 
-function createMap(width, height, data) {
-  const json = {}
-  json.width = width
-  json.height = height
-  json.layers = []
-  let rle = []
-  let runVal = data[0] >> 4
+function encodeRLE(list) {
+  const rle = []
+  let runVal = list[0]
   let runCount = 1
-  for (let i = 1; i < data.length; i++) {
-    const v = data[i] >> 4
+  for (let i = 1; i < list.length; i++) {
+    const v = list[i]
     if (v === runVal) {
       runCount++
     } else {
@@ -283,12 +294,38 @@ function createMap(width, height, data) {
   } else {
     rle.push([runVal, runCount])
   }
+  return rle
+}
+
+function createMap(width, height, data) {
+  const json = {}
+  json.width = width
+  json.height = height
+  json.layers = []
+  const tileIdRLE = encodeRLE(data.map(id => id >> 4))
   let mapLayer = {
     "type": "tilelayer",
     "name": "level",
-    "data": rle
+    "data": tileIdRLE
   }
   json.layers.push(mapLayer)
+
+  // encode layer with 2 bits of rotation data, 0-3 and run length encode it
+  let rotationList = []
+  for (let i = 0; i < data.length; i++) {
+    if (editor.tileset[data[i] >> 4].type == "rotation") {
+      rotationList.push(data[i] & 3)
+    } else {
+      rotationList.push(0)
+    }
+  }
+  const rotationRLE = encodeRLE(rotationList)
+  console.log(rotationRLE)
+  let rotationLayer = {
+    "type": "rotation",
+    "data": rotationRLE
+  }
+  json.layers.push(rotationLayer)
   return json
 }
 
@@ -473,10 +510,15 @@ function calculateAdjacency(tileIdx, tileId, tiles = editor.map.tiles) {
   tileId = (typeof tileId == 'number') ? tileId : tiles[tileIdx] >> 4
   if (tileId == 0) return 0
 
+  if (editor.tileset[tileId].type == 'rotation') {
+    return tileId << 4
+  }
+
   const getNeighborId = (idx) => {
     const val = tiles[idx]
     return val ? val >> 4 : 0
   }
+  
 
   const check = (idx) => {
     const nid = getNeighborId(idx)
@@ -673,12 +715,15 @@ function drawMap(tileSize = editor.tileSize) {
       if (editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("hidden") && mode == 'play') {
         showTile = false
       }
-      if (selectedTile.type == 'adjacency' && showTile) {
-        ctx.drawImage(selectedTile.images[raw & 15], scrX, scrY, tileSize, tileSize)
-      } else if (selectedTile.type == "rotation" && showTile) {
-        ctx.drawImage(selectedTile.images[raw & 15], scrX, scrY, tileSize, tileSize)
-      } else if (selectedTile.type == 'standalone' && showTile) {
-        ctx.drawImage(selectedTile.image, scrX, scrY, tileSize, tileSize)
+      try {
+        if (selectedTile.type == 'adjacency' && showTile) {
+          ctx.drawImage(selectedTile.images[raw & 15], scrX, scrY, tileSize, tileSize)
+        } else if (selectedTile.type == "rotation" && showTile) {
+          ctx.drawImage(selectedTile.images[raw & 15], scrX, scrY, tileSize, tileSize)
+        } else if (selectedTile.type == 'standalone' && showTile) {
+          ctx.drawImage(selectedTile.image, scrX, scrY, tileSize, tileSize)
+        }
+      } catch {
       }
     }
   } 
