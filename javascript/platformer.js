@@ -370,12 +370,12 @@ const player = {
   cam: {x: 0, y: 0},
   vy: 0,
   vx: 0, 
+  jumpHeight: 2.5,
+  yInertia: 1,
+  jumpWidth: 7,
   xInertia: 1.5,
-  yInertia: 2,
   x: 0, 
   y: 0,
-  speed: 10,
-  jump: 22,
   w: 30,
   h: 30,
   stopThreshold: 0.4,
@@ -402,7 +402,7 @@ const editor = {
   width: 100,
   height: 50,
   tileset: [],
-  limitedPlacedTiles: []
+  limitedPlacedTiles: [],
 }
 
 const input = {
@@ -681,14 +681,36 @@ function initEditor() {
   levelEditorLoop()
 }
 
+function getJumpHeight(heightInTiles, yInertia, tileSize) {
+  const gravity = (0.7 * yInertia) + 0.5
+  const heightInPixels = heightInTiles * tileSize
+  return Math.sqrt(2 * gravity * heightInPixels)
+}
+
+function getJumpSpeed(jumpLengthInTiles, jumpForce, yInertia, tilesize) {
+  const gravity = (0.7 * yInertia) + 0.5
+  let vy = -jumpForce
+  let y = 0
+  let frames = 0
+
+  while (y <= 0) {
+    y += vy
+    vy += gravity
+    frames++ 
+  }
+
+  const distance = jumpLengthInTiles * player.tileSize
+  return distance / frames
+}
+
 function initPlatformer() {
   player.w = 0.9 * player.tileSize
   player.h = 0.9 * player.tileSize
   const ratio = player.tileSize / 64
-  player.jump = 22 * ratio
-  player.xInertia = 1.5 * ratio
-  player.yInertia = 2 * ratio
-  player.speed = 10 * ratio
+  player.jump = getJumpHeight(player.jumpHeight + 0.3, player.yInertia, player.tileSize) * ratio
+  player.yInertia = player.yInertia * ratio
+  player.speed = getJumpSpeed(player.jumpWidth - 1, player.jump, player.yInertia, player.tileSize) * ratio
+  player.xInertia = player.xInertia * ratio
   player.stopThreshold = 0.4 * ratio
   player.x = editor.playerSpawn.x * player.tileSize
   player.y = editor.playerSpawn.y * player.tileSize
@@ -854,7 +876,7 @@ function updatePhysics() {
     player.jumpBufferTimer = player.jumpBuffer
   }
 
-  player.vy += 0.7 * player.yInertia
+  player.vy += (0.7 * player.yInertia) + 0.5
 
   if (player.vy > player.tileSize * 0.9) {
     player.vy = player.tileSize * 0.9
@@ -1034,7 +1056,7 @@ function levelEditorLoop() {
         if (tileset[editor.map.tiles[idx] >> 4].type == 'rotation') {
           const currentRotation = editor.map.tiles[idx] & 15
           const newRotation = (currentRotation + 1) % 4
-          editor.map.tiles[idx] = (editor.map.tiles[idx] >> 4) + newRotation 
+          editor.map.tiles[idx] = (editor.map.tiles[idx] >> 4 << 4) + newRotation 
           editor.currentRotation = newRotation
         } else if (editor.map.tiles[idx] >> 4 == 0) {
           const newRotation = (editor.currentRotation + 1) % 4
@@ -1078,6 +1100,8 @@ function levelEditorLoop() {
 
   if (img) {
     ctx.save()
+    ctx.imageSmoothingEnabled = false
+    canvas.style.imageRendering = 'pixelated'
     ctx.globalAlpha = 0.5
     ctx.drawImage(img, cursorScrX, cursorScrY, tileSize, tileSize)
     ctx.restore()

@@ -26,6 +26,10 @@ body {
   align-items: center;
 }
 
+.actions img.menu-button {
+  aspect-ratio: 1;
+  width: 40px;
+}
 
 .sidebar {
   grid-area: sidebar;
@@ -195,4 +199,180 @@ i::before {
   width: 100%;
   height: 100%;
   scrollbar-width: none;
+}
+
+.menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.background {
+  z-index: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.menu-content {
+  z-index: 1;
+  background-color: #C29A62;
+  border-radius: 20px;
+}
+
+input[type="radio"] {
+  display: none;
+}
+
+.menu-content input[type="radio"]:nth-of-type(1):checked ~ .tabs li:nth-of-type(1), 
+.menu-content input[type="radio"]:nth-of-type(2):checked ~ .tabs li:nth-of-type(2), 
+.menu-content input[type="radio"]:nth-of-type(3):checked ~ .tabs li:nth-of-type(3), 
+.menu-content input[type="radio"]:nth-of-type(4):checked ~ .tabs li:nth-of-type(4), 
+.menu-content input[type="radio"]:nth-of-type(5):checked ~ .tabs li:nth-of-type(5) {
+  background-color: #C29A62;
+  border: 3px solid black;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  transform: translateY(3px);
+  z-index: 2;
+}
+
+.tabs {
+  margin: 15px 30px 15px 30px;
+  border-bottom: 3px solid black;
+}
+
+.tabs ul {
+  list-style-type: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+}
+
+.close-button {
+  width: 30px;
+  height: 30px;
+}
+
+.tabs label {
+  font-size: 25px;
+  width: 100px;
+}
+
+.tabs li {
+  padding: 5px 0;
+  box-sizing: border-box;
+  width: 120px;
+  text-align: center;
+  user-select: none;
+  cursor: pointer
+}
+
+.tabs li:has(img) {
+  width: 25px;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 30px 40px;
+  align-items: center;
+}
+
+.menu-item h3 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.menu-item select {
+  background-color: #C29A62;
+  border: none !important;
+  font-family: "Madimi One", monospace;
+  font-size: 20px;
+  font-weight: 200;
+  text-align: end;
+  padding: 5px;
+}
+
+.menu-item select option {
+  border: none;
+  outline: none;
+  border-radius: 0 0 10px 10px;
+}
+
+.menu-item select:focus {
+  outline: none;
+  border: none;
+}
+
+.menu-item label {
+  font-size: 25px;
+}
+
+.menu-item input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 300px;
+  cursor: pointer;
+}
+
+.menu-item input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  background: black;
+  border: none;
+  border-radius: 2px;
+}
+
+.menu-item input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  background: black;
+  border: none;
+  border-radius: 2px;
+}
+
+.menu-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 200px;
+  background: #C29A62;
+  border: 3px solid black;
+  box-sizing: border-box;
+  margin-top: -7px;
+}
+.menu-item input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 200px;
+  background: #C29A62;
+  border: 3px solid black;
+  box-sizing: border-box;
+}
+
+
+
+.tab {
+  display: none;
+}
+
+.menu-content input[type="radio"]:nth-of-type(1):checked ~ .tab-content :nth-of-type(1), 
+.menu-content input[type="radio"]:nth-of-type(2):checked ~ .tab-content .tab:nth-of-type(2),
+.menu-content input[type="radio"]:nth-of-type(3):checked ~ .tab-content .tab:nth-of-type(3),
+.menu-content input[type="radio"]:nth-of-type(4):checked ~ .tab-content .tab:nth-of-type(4),
+.menu-content input[type="radio"]:nth-of-type(5):checked ~ .tab-content .tab:nth-of-type(5) {
+  display: block;
 }

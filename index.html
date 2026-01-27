@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -19,7 +20,7 @@
         <img class="save" src="./assets/icons/save.svg">
         <img class="import" src="./assets/icons/import.svg">
         <img class="play" src="./assets/icons/play.svg" alt="">
-        <img class="menu" src="./assets/icons/menu.svg">
+        <img class="menu-button" src="./assets/icons/menu.svg" onclick="document.querySelector('.menu').style.display = 'flex'">
       </div>
     </div>
     <div class="game">
@@ -63,6 +64,71 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="menu">
+    <div class="background" onclick="document.querySelector('.menu').style.display = 'none'"></div>
+    <div class="menu-content">
+      <input type="radio" name="tabs" id="tab1">
+      <input type="radio" name="tabs" id="tab2">
+      <input type="radio" name="tabs" id="tab3">
+      <input type="radio" name="tabs" id="tab4">
+      <input type="radio" name="tabs" id="tab5">
+      
+      <div class="tabs">
+        <ul>
+          <li><label for="tab1">Level</label></li>
+          <li><label for="tab2">Physics</label></li>
+          <li><label for="tab3">Share</label></li>
+          <li><label for="tab4">Options</label></li>
+          <li><label for="tab5">Help</label></li>
+          <li><img src="./assets/icons/close.svg" class="close-button" onclick="document.querySelector('.menu').style.display = 'none'"></li>
+        </ul>
+      </div>
+      <div class="tab-content">
+        <div class="tab"></div>
+        <div class="tab">
+          <div class="menu-item">
+            <label for="jump-height">Jump Height</label>
+            <div class="range-wrapper">
+              <output id="jump-height-val">2.5</output>
+              <input type="range" name="jump-height" id="jump-height-input" min="0" max="10" step="0.5" value="2.5" oninput="document.getElementById('jump-height-val').innerHTML = this.value">
+            </div>
+          </div>
+          <div class="menu-item">
+            <label for="vertical-inertia">Vertical Inertia</label>
+            <div class="range-wrapper">
+              <output id="vertical-inertia-val">1</output>
+              <input type="range" name="vertical-inertia" id="vertical-inertia-input" min="0.8" max="3" step="0.1" value="1" oninput="document.getElementById('vertical-inertia-val').innerHTML = this.value">
+            </div>
+          </div>
+          <div class="menu-item">
+            <label for="jump-width">Jump Width</label>
+            <div class="range-wrapper">
+              <output id="jump-width-val">7</output>
+              <input type="range" name="jump-width" id="jump-width-input" min="3" max="10" step="0.5" value="7" oninput="document.getElementById('jump-width-val').innerHTML = this.value">
+            </div>
+          </div>
+          <div class="menu-item">
+            <label for="horizontal-inertia">Horizonal Inertia</label>
+            <div class="range-wrapper">
+              <output id="horizontal-inertia-val">1.5</output>
+              <input type="range" name="horizontal-inertia" id="horizonal-inertia-input" min="0.8" max="2" step="0.1" value="1.5" oninput="document.getElementById('horizontal-inertia-val').innerHTML = this.value">
+            </div>
+          </div>
+          <div class="menu-item">
+            <label for="walljump">Walljump</label>
+            <select name="walljump" id="walljump-input">
+              <option value="">Disabled</option>
+              <option value="">Enabled</option>
+              <option value="">Other Option</option>
+            </select>
+          </div>
+        </div>
+        <div class="tab"></div>
+        <div class="tab"></div>
+        <div class="tab"></div>
       </div>
     </div>
   </div>
