@@ -80,8 +80,8 @@
       "name": "cactus",
       "file": "cactus.png",
       "category": "hazards",
-      "type": "adjacency",
-      "triggerAdjacency": true,
+      "type": "rotation",
+      "triggerAdjacency": false,
       "mechanics": [
         "killOnTouch"
       ]
