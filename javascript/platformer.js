@@ -970,7 +970,7 @@ function checkCollision(x, y, w, h, simulate = false) {
 }
 
 let lastJumpInput = false;
-function updatePhysics() {
+function updatePhysics(dt) {
   if (player.coyoteTimer > 0) player.coyoteTimer--
   if (player.jumpBufferTimer > 0) player.jumpBufferTimer--
 
@@ -988,16 +988,16 @@ function updatePhysics() {
       isJumping = false;
   }
 
-  player.vy += (0.7 * player.yInertia) + 0.5
+  player.vy += ((0.7 * player.yInertia) + 0.5) * dt
 
   if (player.vy > player.tileSize * 0.9) {
     player.vy = player.tileSize * 0.9
   }
 
   if (player.vx < 0) {
-    player.vx += player.xInertia * 0.45
+    player.vx += player.xInertia * 0.45 * dt
   } else if (player.vx > 0) {
-    player.vx -= player.xInertia * 0.45
+    player.vx -= player.xInertia * 0.45 * dt
   }
   if (Math.abs(player.vx) < player.stopThreshold) {
     player.vx = 0
@@ -1012,14 +1012,14 @@ function updatePhysics() {
   const jumpControl = player.decreaseAirControl && !player.grounded ? 1 : 1
   if (input.keys['a'] || input.keys['ArrowLeft']) {
     if (player.vx > -player.speed) {
-      player.vx -= player.xInertia * 1 * jumpControl
+      player.vx -= player.xInertia * 1 * jumpControl * dt
     } else {
       player.vx = -player.speed
     }
   }
   if (input.keys['d'] || input.keys['ArrowRight']) {
     if (player.vx < player.speed) {
-      player.vx += player.xInertia * 1 * jumpControl
+      player.vx += player.xInertia * 1 * jumpControl * dt
     } else {
       player.vx = player.speed
     }
@@ -1028,7 +1028,7 @@ function updatePhysics() {
   const offX = (player.w - player.hitboxW) / 2
   const offY = (player.h - player.hitboxH)
 
-  player.x += player.vx
+  player.x += player.vx * dt
   if (checkCollision(player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
     if (player.vx > 0) {
       const hitRight = player.x + offX + player.hitboxW
@@ -1040,7 +1040,7 @@ function updatePhysics() {
     player.vx = 0
   }
 
-  player.y += player.vy
+  player.y += player.vy * dt
   player.grounded = false
 
   if (checkCollision(player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
@@ -1073,7 +1073,7 @@ function updatePhysics() {
     player.wallCoyoteTimer = player.wallCoyoteTime
     player.lastWallSide = 1
   } else if (player.wallCoyoteTimer > 0) {
-    player.wallCoyoteTimer--
+    player.wallCoyoteTimer -= dt
   }
 
   // walljump
@@ -1144,8 +1144,18 @@ function drawPlayer() {
   ctx.drawImage(player.sprites[selectedFrame], Math.floor(player.x - player.cam.x), Math.floor(player.y - player.cam.y), player.w, player.h)
 }
 
-function platformerLoop() {
-  updatePhysics()
+function deltaTime(timestamp) {
+  if (!timestamp) timestamp = performance.now()
+  if (lastTime === 0) lastTime = timestamp
+  const seconds = (timestamp - lastTime) / 1000
+  lastTime = timestamp
+  return Math.min(seconds, 0.1)
+}
+lastTime = 0
+function platformerLoop(timestamp) {
+  let dt = deltaTime(timestamp)
+  let timeScale = dt * 60
+  updatePhysics(timeScale)
   // don't update the camera if the player is in the middle section of the screen
   if (player.x > player.cam.x + (canvas.width * 0.75)) {
     // moving right
