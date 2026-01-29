@@ -1212,11 +1212,10 @@ function levelEditorLoop(timestamp) {
   const { map, cam, tileSize, tileset} = editor
 
   const speed = 10
-  if ((input.keys['w'] || input.keys["ArrowUp"]) && cam.y >= 0) cam.y -= speed * dt
-  if ((input.keys['s'] || input.keys["ArrowDown"]) && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed * dt
-  if ((input.keys['a'] || input.keys["ArrowLeft"]) && cam.x >= 0) cam.x -= speed * dt
-  if ((input.keys['d'] || input.keys["ArrowRight"]) && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed * dt
-
+  if ((input.keys['w'] || input.keys["ArrowUp"]) && cam.y >= 0) cam.y -= speed * timeScale
+  if ((input.keys['s'] || input.keys["ArrowDown"]) && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed * timeScale
+  if ((input.keys['a'] || input.keys["ArrowLeft"]) && cam.x >= 0) cam.x -= speed * timeScale
+  if ((input.keys['d'] || input.keys["ArrowRight"]) && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed * timeScale
   const worldX = input.x + cam.x
   const worldY = input.y + cam.y
   const tx = Math.floor(worldX / tileSize)
