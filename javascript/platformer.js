@@ -1208,7 +1208,6 @@ let once = true
 function levelEditorLoop(timestamp) {
   let dt = deltaTime(timestamp)
   let timeScale = dt * 60
-  updatePhysics(timeScale)
   const { map, cam, tileSize, tileset} = editor
 
   const speed = 10
