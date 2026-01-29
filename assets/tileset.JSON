@@ -102,7 +102,7 @@
       "name": "Bounce Pad",
       "file": "bounce-pad.png",
       "category": "mechanics", 
-      "type": "standalone",
+      "type": "rotation",
       "triggerAdjacency": false,
       "mechanics": [
         "bouncePad"

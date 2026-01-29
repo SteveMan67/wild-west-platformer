@@ -189,7 +189,6 @@ document.addEventListener('keypress', (e) => {
   if (e.key == 'e') {
     toggleErase()
   } else if (e.key == 'p') {
-    console.log("switching modes")
     mode = mode === 'editor' ? 'play' : 'editor'
     if (mode == 'play') {
       initPlatformer()
@@ -246,11 +245,9 @@ function importMap(e) {
     }
     rawTileLayer = rawTileLayer.map(id => id << 4)
     rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height)
-    console.log(rawTileLayer)
     for (let i = 0; i < rawTileLayer.length; i++) {
       if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
         rawTileLayer[i] += rawRotationLayer[i]
-        console.log(rawTileLayer[i] >> 4, rawTileLayer[i] & 3, rawTileLayer[i], i)
       }
       if (editor.tileset[rawTileLayer[i] >> 4].mechanics && editor.tileset[rawTileLayer[i] >> 4].mechanics.includes("spawn")) {
         editor.playerSpawn.y = Math.floor(i / json.width)
@@ -354,7 +351,6 @@ function createMap(width, height, data) {
     }
   }
   const rotationRLE = encodeRLE(rotationList)
-  console.log(rotationRLE)
   let rotationLayer = {
     "type": "rotation",
     "data": rotationRLE
@@ -544,7 +540,6 @@ function splitStripImages(tileset) {
       newTileset[tile.id] = tile
     }
   })
-  console.log(tileset, newTileset)
   return newTileset
 }
 
@@ -908,7 +903,18 @@ function mechanics(tileId, tx, ty, x, y, w, h) {
   }
   if (mechanics.includes("bouncePad")) {
     if (checkPixelCollsion(tileId, tx, ty, x, y, w, h)) {
-      player.vy = -getJumpHeight(player.bouncePadHeight, player.yInertia, player.tileSize)
+      const idx = ty * editor.map.w + tx
+      const bounceTile = editor.map.tiles[idx]
+      console.log(idx, bounceTile, bounceTile & 15)
+      if ((bounceTile & 15) == 0) {
+        player.vy = -getJumpHeight(player.bouncePadHeight, player.yInertia, player.tileSize)
+      } else if ((bounceTile & 15) == 1){
+        player.vx = -getJumpHeight(player.bouncePadHeight, player.xInertia, player.tileSize)
+      } else if ((bounceTile & 15) == 2) {
+        player.vy = getJumpHeight(player.bouncePadHeight, player.yInertia, player.tileSize)
+      } else if ((bounceTile & 15) == 3) {
+        player.vx = getJumpHeight(player.bouncePadHeight, player.xInertia, player.tileSize)
+      }
     }
   }
   if (mechanics.includes("checkpoint")) {
@@ -1191,10 +1197,10 @@ function levelEditorLoop() {
   const { map, cam, tileSize, tileset} = editor
 
   const speed = 10
-  if (input.keys['w'] && cam.y >= 0) cam.y -= speed
-  if (input.keys['s'] && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed
-  if (input.keys['a'] && cam.x >= 0) cam.x -= speed
-  if (input.keys['d'] && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed
+  if ((input.keys['w'] || input.keys["ArrowUp"]) && cam.y >= 0) cam.y -= speed
+  if ((input.keys['s'] || input.keys["ArrowDown"]) && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed
+  if ((input.keys['a'] || input.keys["ArrowLeft"]) && cam.x >= 0) cam.x -= speed
+  if ((input.keys['d'] || input.keys["ArrowRight"]) && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed
 
   const worldX = input.x + cam.x
   const worldY = input.y + cam.y
@@ -1221,7 +1227,6 @@ function levelEditorLoop() {
             editor.end = { x: tx, y: ty }
           }
         }
-        console.log(editor.selectedTile)
         if (tileset[editor.selectedTile].type == "adjacency" && !tileLimitPlaced) {
           calcAdjacentAdjacency(idx, editor.selectedTile)
         } else if (tileset[editor.selectedTile].type == 'rotation' && !tileLimitPlaced) {
@@ -1245,7 +1250,6 @@ function levelEditorLoop() {
   if (input.keys['r']) {
     const idx = ty * map.w + tx
     if (!rDown) {
-      console.log(editor.map.tiles[idx] >> 4)
       if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
         if (tileset[editor.map.tiles[idx] >> 4].type == 'rotation') {
           const currentRotation = editor.map.tiles[idx] & 15
