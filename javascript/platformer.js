@@ -843,7 +843,7 @@ function killPlayer() {
 
 function endLevel() {
   mode = "editor" 
-  initEditor()
+  setTimeout(initEditor, 1)
 }
 
 const tileMaskCache = new Map()
