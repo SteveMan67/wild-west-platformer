@@ -1204,14 +1204,17 @@ let spaceDown = false
 let lastIdx
 let once = true
 
-function levelEditorLoop() {
+function levelEditorLoop(timestamp) {
+  let dt = deltaTime(timestamp)
+  let timeScale = dt * 60
+  updatePhysics(timeScale)
   const { map, cam, tileSize, tileset} = editor
 
   const speed = 10
-  if ((input.keys['w'] || input.keys["ArrowUp"]) && cam.y >= 0) cam.y -= speed
-  if ((input.keys['s'] || input.keys["ArrowDown"]) && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed
-  if ((input.keys['a'] || input.keys["ArrowLeft"]) && cam.x >= 0) cam.x -= speed
-  if ((input.keys['d'] || input.keys["ArrowRight"]) && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed
+  if ((input.keys['w'] || input.keys["ArrowUp"]) && cam.y >= 0) cam.y -= speed * dt
+  if ((input.keys['s'] || input.keys["ArrowDown"]) && cam.y <= (map.h * tileSize) - canvas.height) cam.y += speed * dt
+  if ((input.keys['a'] || input.keys["ArrowLeft"]) && cam.x >= 0) cam.x -= speed * dt
+  if ((input.keys['d'] || input.keys["ArrowRight"]) && cam.x <= (map.w * tileSize) - canvas.width) cam.x += speed * dt
 
   const worldX = input.x + cam.x
   const worldY = input.y + cam.y
