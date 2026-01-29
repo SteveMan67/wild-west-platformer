@@ -252,6 +252,10 @@ function importMap(e) {
         rawTileLayer[i] += rawRotationLayer[i]
         console.log(rawTileLayer[i] >> 4, rawTileLayer[i] & 3, rawTileLayer[i], i)
       }
+      if (editor.tileset[rawTileLayer[i] >> 4].mechanics && editor.tileset[rawTileLayer[i] >> 4].mechanics.includes("spawn")) {
+        editor.playerSpawn.y = Math.floor(i / json.width)
+        editor.playerSpawn.x = i % json.width
+      }
     }
     editor.width = json.width
     editor.height = json.height
@@ -794,8 +798,8 @@ function initPlatformer() {
   platformerLoop()
 }
 
-function drawMap(tileSize = editor.tileSize) {
-  const { map, cam, tileset} = editor
+function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
+  const { map, tileset} = editor
   
   const startX = Math.floor(cam.x / tileSize)
   const endX = startX + (canvas.width / tileSize) + 1
@@ -1067,8 +1071,8 @@ function updatePhysics() {
   }
 
   // walljump
-  if (!player.grounded && player.wallJump && player.jumpBufferTimer > 0) {
-    if (player.lastWallSide == -1 && player.wallCoyoteTimer > 0) { 
+  if (!player.grounded && player.wallJump && player.jumpBufferTimer > 0 && player.wallCoyoteTimer > 0) {
+    if (player.lastWallSide == -1) { 
       if (input.keys['d'] || input.keys['ArrowRight']) {
         // jump off wall
         player.vx = player.speed * 2
@@ -1080,7 +1084,7 @@ function updatePhysics() {
       player.jumpBufferTimer = 0
       player.lastWallSide = 0
       player.wallCoyoteTimer = 0
-    } else if (player.lastWallSide == 1 && player.wallCoyoteTimer > 0) {
+    } else if (player.lastWallSide == 1) {
       if (input.keys['a'] || input.keys['ArrowLeft']) {
         player.vx = -player.speed * 2
       } else {
@@ -1131,44 +1135,44 @@ function drawPlayer() {
     }
   }
   ctx.imageSmoothingEnabled = false
-  ctx.drawImage(player.sprites[selectedFrame], Math.floor(player.x - editor.cam.x), Math.floor(player.y - editor.cam.y), player.w, player.h)
+  ctx.drawImage(player.sprites[selectedFrame], Math.floor(player.x - player.cam.x), Math.floor(player.y - player.cam.y), player.w, player.h)
 }
 
 function platformerLoop() {
   updatePhysics()
   // don't update the camera if the player is in the middle section of the screen
-  if (player.x > editor.cam.x + (canvas.width * 0.75)) {
+  if (player.x > player.cam.x + (canvas.width * 0.75)) {
     // moving right
-    editor.cam.x = player.x - (canvas.width * 0.75)
-  } else if (player.x < editor.cam.x + (canvas.width * 0.25)) {
+    player.cam.x = player.x - (canvas.width * 0.75)
+  } else if (player.x < player.cam.x + (canvas.width * 0.25)) {
     // moving left
-    editor.cam.x = player.x - (canvas.width * 0.25)
+    player.cam.x = player.x - (canvas.width * 0.25)
   }
-  if (player.y > editor.cam.y + (canvas.height * 0.5)) {
+  if (player.y > player.cam.y + (canvas.height * 0.5)) {
     // moving down
-    editor.cam.y = player.y - (canvas.height * 0.5)
-  } else if (player.y < editor.cam.y + (canvas.height * 0.25)) {
+    player.cam.y = player.y - (canvas.height * 0.5)
+  } else if (player.y < player.cam.y + (canvas.height * 0.25)) {
     // moving up
-    editor.cam.y = player.y - (canvas.height * 0.25)
+    player.cam.y = player.y - (canvas.height * 0.25)
   }
 
-  if (editor.cam.y < 0) {
-    editor.cam.y = 0
-  } else if (editor.cam.y > (editor.map.h * player.tileSize) - canvas.height) {
-    editor.cam.y = (editor.map.h * player.tileSize) - canvas.height
+  if (player.cam.y < 0) {
+    player.cam.y = 0
+  } else if (player.cam.y > (editor.map.h * player.tileSize) - canvas.height) {
+    player.cam.y = (editor.map.h * player.tileSize) - canvas.height
   }
 
-  if (editor.cam.x < 0) {
-    editor.cam.x = 0
-  } else if (editor.cam.x > (editor.map.w * player.tileSize) - canvas.width) {
-    editor.cam.x = (editor.map.w * player.tileSize) - canvas.width
+  if (player.cam.x < 0) {
+    player.cam.x = 0
+  } else if (player.cam.x > (editor.map.w * player.tileSize) - canvas.width) {
+    player.cam.x = (editor.map.w * player.tileSize) - canvas.width
   }
 
  
   ctx.fillStyle = '#C29A62'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  drawMap(player.tileSize)
+  drawMap(player.tileSize, player.cam)
 
   drawPlayer()
 
