@@ -1194,7 +1194,9 @@ let lastTime = 0
 function platformerLoop(timestamp) {
   let dt = deltaTime(timestamp)
   let timeScale = dt * 60
-  updatePhysics(timeScale)
+  if (!player.died) {
+    updatePhysics(timeScale)
+  }
   // don't update the camera if the player is in the middle section of the screen
   if (!player.died) {
     player.cam.x = getCameraCoords().x
