@@ -425,6 +425,10 @@ async function loadTileset(manifestPath) {
 let mode = "editor"
 
 const player = {
+  dieCameraTime: 30, // frames
+  dieCameraTimer: 30,
+  dieCameraStart: {},
+  died: false,
   collectedCoins: 0,
   collectedCoinList: [],
   cam: {x: 0, y: 0},
@@ -832,6 +836,11 @@ function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
 function killPlayer() {
   player.vy = 0
   player.vx = 0
+  player.died = true
+  player.dieCameraTimer = player.dieCameraTime
+  player.dieCameraStart = { x: player.cam.x, y: player.cam.y}
+  console.log(player.cam, player.dieCameraStart)
+  console.log(getCameraCoords())
   if (player.lastCheckpointSpawn.y !== 0 && player.lastCheckpointSpawn.x !== 0) {
     player.x = player.lastCheckpointSpawn.x * player.tileSize
     player.y = player.lastCheckpointSpawn.y * player.tileSize
@@ -1151,6 +1160,29 @@ function drawPlayer(dt) {
   ctx.drawImage(player.sprites[selectedFrame], Math.floor(player.x - player.cam.x), Math.floor(player.y - player.cam.y), player.w, player.h)
 }
 
+function getCameraCoords() {
+  let x, y
+  if (player.x > player.cam.x + (canvas.width * 0.75)) {
+    // moving right
+    x = player.x - (canvas.width * 0.75)
+  } else if (player.x < player.cam.x + (canvas.width * 0.25)) {
+    // moving left
+    x = player.x - (canvas.width * 0.25)
+  } else {
+    x = player.cam.x
+  }
+  if (player.y > player.cam.y + (canvas.height * 0.5)) {
+    // moving down
+    y = player.y - (canvas.height * 0.5)
+  } else if (player.y < player.cam.y + (canvas.height * 0.25)) {
+    // moving up
+    y = player.y - (canvas.height * 0.25)
+  } else {
+    y = player.cam.y
+  }
+  return {x: x, y: y}
+}
+
 function deltaTime(timestamp) {
   if (!timestamp) timestamp = performance.now()
   if (lastTime === 0) lastTime = timestamp
@@ -1164,19 +1196,26 @@ function platformerLoop(timestamp) {
   let timeScale = dt * 60
   updatePhysics(timeScale)
   // don't update the camera if the player is in the middle section of the screen
-  if (player.x > player.cam.x + (canvas.width * 0.75)) {
-    // moving right
-    player.cam.x = player.x - (canvas.width * 0.75)
-  } else if (player.x < player.cam.x + (canvas.width * 0.25)) {
-    // moving left
-    player.cam.x = player.x - (canvas.width * 0.25)
-  }
-  if (player.y > player.cam.y + (canvas.height * 0.5)) {
-    // moving down
-    player.cam.y = player.y - (canvas.height * 0.5)
-  } else if (player.y < player.cam.y + (canvas.height * 0.25)) {
-    // moving up
-    player.cam.y = player.y - (canvas.height * 0.25)
+  if (!player.died) {
+    player.cam.x = getCameraCoords().x
+    player.cam.y = getCameraCoords().y
+  } else {
+    // camera animation to respawn point
+    if (player.dieCameraTimer > 0) {
+      const progress = 1 - (Math.max(0, player.dieCameraTimer) / player.dieCameraTime)
+      const ease = -(Math.cos(Math.PI * progress) - 1) / 2
+      const mapW = editor.map.w * player.tileSize
+      const mapH = editor.map.w * player.tileSize
+
+      let targetX = getCameraCoords().x
+      let targetY = getCameraCoords().y
+
+      player.cam.x = player.dieCameraStart.x + (targetX - player.dieCameraStart.x) * ease
+      player.cam.y = player.dieCameraStart.y + (targetY - player.dieCameraStart.y) * ease
+      player.dieCameraTimer -= timeScale
+    } else {
+      player.died = false
+    }
   }
 
   if (player.cam.y < 0) {
