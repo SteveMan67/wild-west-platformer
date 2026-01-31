@@ -94,6 +94,14 @@
               <input type="range" name="zoom-level" id="zoom-level-input" min="0.7" max="2" step="0.2" value="1" oninput="document.getElementById('zoom-level-val').innerHTML = this.value">
             </div>
           </div>
+          <div class="menu-item">
+            <label for="tileset">Tileset</label>
+            <select name="tileset" id="tileset-input" oninput="updateTileset(this.value)">
+              <option value="/assets/8x8.json">8x8 Blocky</option>
+              <option value="/assets/16x16.json" selcted>16x16 blocky</option>
+              <option value="/assets/32x32.json">32x32 Realistic</option>
+            </select>
+          </div>
         </div>
         <div class="tab">
           <div class="menu-item">

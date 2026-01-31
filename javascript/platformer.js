@@ -258,6 +258,9 @@ function importMap(e) {
       zoomSlider.value = (json.zoom / (32 / 0.6))
       player.tileSize = json.zoom
     }
+    if (json.tilesetPath) {
+      updateTileset(json.tilesetPath)
+    }
     player.wallJump = json.wallJump
     const tileLayer = json.layers.find(l => l.type === "tilelayer")
     const rotationLayer = json.layers.find(l => l.type === "rotation")
@@ -357,6 +360,7 @@ function createMap(width, height, data) {
   json.wallJump = player.wallJump
   json.bouncePadHeight = player.bouncePadHeight
   json.zoom = player.tileSize
+  json.tilesetPath = editor.tilesetPath
   json.layers = []
   const tileIdRLE = encodeRLE(data.map(id => id >> 4))
   let mapLayer = {
@@ -413,35 +417,35 @@ function loadPlayerSprites(playerImg) {
 
 async function loadTileset(manifestPath) {
   return fetch(manifestPath)
-    .then(response => response.json())
-    .then(manifest => {
-
-      const promises = manifest.tiles.map(tileData => {
-
-        if (!tileData.file) return Promise.resolve(tileData)
+  .then(response => response.json())
+  .then(manifest => {
+    
+    const promises = manifest.tiles.map(tileData => {
+      
+      if (!tileData.file) return Promise.resolve(tileData)
         return new Promise((resolve, reject) => {
-          const img = new Image()
-          img.src = manifest.path + tileData.file
-          img.onload = () => resolve({...tileData, image: img})
-          img.onerror = reject
-        })
-      })
-
+      const img = new Image()
+      img.src = manifest.path + tileData.file
+      img.onload = () => resolve({...tileData, image: img})
+      img.onerror = reject
+    })
+  })
+  
       const characterPromise = new Promise((resolve) => {
         if (!manifest.characterFile) return resolve(null)
-        const img = new Image()
+          const img = new Image()
         img.src = manifest.path + manifest.characterFile
         img.onload = () => resolve(img) 
         img.onerror = () => resolve(null)
       })
-
+      
       return Promise.all([Promise.all(promises), characterPromise])
-        .then(([items, characterImage]) => {
-          const tileset = []
-          items.forEach(item => {
-            tileset[item.id] = item
-          })
-          return { tileset, characterImage }
+      .then(([items, characterImage]) => {
+        const tileset = []
+        items.forEach(item => {
+          tileset[item.id] = item
+        })
+        return { tileset, characterImage }
         })
     })
 }
@@ -504,7 +508,7 @@ const editor = {
   height: 50,
   tileset: [],
   limitedPlacedTiles: [],
-  tilesetPath: "/assets/8x8",
+  tilesetPath: "/assets/16x16.json",
 }
 
 const input = {
@@ -714,45 +718,56 @@ function updateLevelSize(width, height) {
 function addTileSelection() {
   const categoryBlocks = document.querySelector('.category-blocks')
   for (let i = 1; i < editor.tileset.length; i++) {
-    let div = document.createElement('div')
-    div.classList.add('tile-select-container')
-    div.dataset.tile = i
-    div.dataset.category = editor.tileset[i].category
-    categoryBlocks.appendChild(div)
-    let img = document.createElement('img')
-    img.classList.add('tile-select')
-    let src
-    if (editor.tileset[i].type == 'rotation' || editor.tileset[i].type == 'adjacency') {
-      const c = editor.tileset[i].images[0]
-      if (c instanceof HTMLCanvasElement) {
-        if (c.toBlob) {
-          c.toBlob(blob => {
-            const url = URL.createObjectURL(blob)
-            img.src = url
-            img.onload = () => URL.revokeObjectURL(url)
-          })
-        } else {
-          img.src = c.toDataURL()
+    if (editor.tileset[i]) {
+      let div = document.createElement('div')
+      div.classList.add('tile-select-container')
+      div.dataset.tile = i
+      div.dataset.category = editor.tileset[i].category
+      categoryBlocks.appendChild(div)
+      let img = document.createElement('img')
+      img.classList.add('tile-select')
+      let src
+      if (editor.tileset[i].type == 'rotation' || editor.tileset[i].type == 'adjacency') {
+        const c = editor.tileset[i].images[0]
+        if (c instanceof HTMLCanvasElement) {
+          if (c.toBlob) {
+            c.toBlob(blob => {
+              const url = URL.createObjectURL(blob)
+              img.src = url
+              img.onload = () => URL.revokeObjectURL(url)
+            })
+          } else {
+            img.src = c.toDataURL()
+          }
+        } else if (c instanceof HTMLImageElement) {
+          img.src = c.src
         }
-      } else if (c instanceof HTMLImageElement) {
-        img.src = c.src
-      }
-    } else {
-      if (editor.tileset[i].image instanceof HTMLImageElement) {
-        img.src = editor.tileset[i].image.src
       } else {
-        img.src = ''
+        if (editor.tileset[i].image instanceof HTMLImageElement) {
+          img.src = editor.tileset[i].image.src
+        } else {
+          img.src = ''
+        }
       }
+      div.appendChild(img)
+      div.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        editor.lastSelectedTiles.shift()
+        editor.selectedTile = Number(div.dataset.tile)
+        editor.lastSelectedTiles.push(editor.selectedTile)
+      })
     }
-    div.appendChild(img)
-    div.addEventListener('mousedown', (e) => {
-      e.preventDefault()
-      editor.lastSelectedTiles.shift()
-      editor.selectedTile = Number(div.dataset.tile)
-      editor.lastSelectedTiles.push(editor.selectedTile)
-    })
   }
   sortByCategory("")
+}
+
+function updateTileset(path) {
+  editor.tilesetPath = path
+  loadTileset(editor.tilesetPath).then(({tileset, characterImage}) => {
+    editor.tileset = splitStripImages(tileset)
+    loadPlayerSprites(characterImage)
+    addTileSelection()
+  })
 }
 
 function init() {
@@ -767,7 +782,7 @@ function init() {
   canvas.addEventListener('mousedown', () => input.down = true)
   canvas.addEventListener('mouseup', () => input.down = false)
 
-  loadTileset('assets/16x16.JSON').then(({tileset, characterImage}) => {
+  loadTileset(editor.tilesetPath).then(({tileset, characterImage}) => {
     editor.tileset = splitStripImages(tileset)
     loadPlayerSprites(characterImage)
     editor.map = {
@@ -844,7 +859,7 @@ function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
       const scrY = Math.floor((y * tileSize) - cam.y)
       const selectedTile = tileset[tileId]
       let showTile = true
-      if (editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("hidden") && mode == 'play') {
+      if (editor.tileset[tileId] && editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("hidden") && mode == 'play') {
         showTile = false
       }
       if (player.collectedCoinList.includes(y * map.w + x) && mode == 'play') {
