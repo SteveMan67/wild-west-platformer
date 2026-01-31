@@ -1,5 +1,5 @@
 {
-  "path": "assets/8x8/",
+  "path": "assets/medium/",
   "name": "16x16",
   "characterFile": "player.png",
   "tiles": [
@@ -119,6 +119,18 @@
       "mechanics": [
         "coin",
         "noCollision"
+      ]
+    }, 
+    {
+      "id": 11,
+      "name": "Dissipation Block",
+      "file": "dissipation-block.png",
+      "category": "blocks",
+      "type": "rotation",
+      "triggerAdjacency": false,
+      "mechanics": [
+        "pixelCollision",
+        "dissipate"
       ]
     }
   ]

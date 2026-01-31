@@ -491,6 +491,7 @@ const player = {
   autoJump: false,
   controlTimer: 0,
   controlMultiplier: 1,
+  dissipations: [] // each item has a timeToDissapate, timeToReturn, timer, and tileIdx
 }
 
 const editor = {
@@ -508,7 +509,9 @@ const editor = {
   height: 50,
   tileset: [],
   limitedPlacedTiles: [],
-  tilesetPath: "/assets/16x16.json",
+  tilesetPath: "/assets/medium.json",
+  dissipateTime: 2 * 60,
+  dissipateDelay: 2 * 60,
 }
 
 const input = {
@@ -945,7 +948,7 @@ function checkPixelCollsion(tileId, tx, ty, px, py, pw, ph) {
   return false
 } 
 
-function mechanics(tileId, tx, ty, x, y, w, h) {
+function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
   const mechanics = editor.tileset[tileId].mechanics
   if (!mechanics) return
   if (mechanics.includes("killOnTouch")) {
@@ -982,9 +985,32 @@ function mechanics(tileId, tx, ty, x, y, w, h) {
       player.collectedCoinList.push(idx)
     }
   }
+  if (mechanics.includes("dissipate")) {
+    const dissipation = dissipations.find(f => f.tileIdx == tileIdx)
+    if (dissipation) {
+      if (dissipation.timer > dissipation.timeToDissipate) {
+        dissipation.timer -= dt
+      } else {
+        // remove it from collisions and display
+        if (dissipation.timer == 0) {
+          dissipation.timer = dissipation.timeToReturn
+          // add it back
+        }
+      }
+    } else {
+      // initialize the dissipation
+      const dissipation = {
+        timeToDissipate: editor.dissipateTime,
+        timeToReturn: editor.dissipateTime + editor.dissipateDelay,
+        timer: editor.dissipateTime + editor.dissipateDelay,
+        tileIdx: tileIdx
+      }
+      player.dissipations.push(dissipation)
+    }
+  }
 }
 
-function checkCollision(x, y, w, h, simulate = false) {
+function checkCollision(dt, x, y, w, h, simulate = false) {
   const startX = Math.floor(x / player.tileSize)
   const endX = Math.floor((x + w - 0.01) / player.tileSize)
   const startY = Math.floor(y / player.tileSize)
@@ -999,7 +1025,7 @@ function checkCollision(x, y, w, h, simulate = false) {
       const oldX = player.x;
       const oldY = player.y
 
-      if (!player.collectedCoinList.includes(idx) && !simulate) mechanics(tileId, px, py, x, y, w, h)
+      if (!player.collectedCoinList.includes(idx) && !simulate) mechanics(dt, idx, tileId, px, py, x, y, w, h)
       
       if (player.x !== oldX || player.y !== oldY) return false
       if (tileId !== 0) {
@@ -1015,6 +1041,9 @@ function checkCollision(x, y, w, h, simulate = false) {
         }
         if (tile && tile.mechanics && tile.mechanics.includes("noCollision")) {
           continue
+        }
+        if (tile && tile.mechanics && tile.mechanics.include("pixelCollision")) {
+          return checkPixelCollsion(tileId, px,py, x, y, w, h)
         }
         if (player.collectedCoinList.includes(idx)) continue
         return true
@@ -1126,7 +1155,7 @@ function updatePhysics(dt) {
   const offY = (player.h - player.hitboxH)
 
   player.x += player.vx * dt
-  if (checkCollision(player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
+  if (checkCollision(dt, player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
     if (player.vx > 0) {
       const hitRight = player.x + offX + player.hitboxW
       player.x = (Math.floor(hitRight / player.tileSize) * player.tileSize) - player.hitboxW - offX
@@ -1140,7 +1169,7 @@ function updatePhysics(dt) {
   player.y += player.vy * dt
   player.grounded = false
 
-  if (checkCollision(player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
+  if (checkCollision(dt, player.x + offX, player.y + offY, player.hitboxW, player.hitboxH)) {
     if (player.vy > 0) {
       const hitBottom = player.y + offY + player.hitboxH
       const tileTop = Math.floor(hitBottom / player.tileSize) * player.tileSize
@@ -1159,8 +1188,8 @@ function updatePhysics(dt) {
     killPlayer()
   }
 
-  const touchingLeft = checkCollision(player.x + offX - 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
-  const touchingRight = checkCollision(player.x + offX + 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
+  const touchingLeft = checkCollision(dt,player.x + offX - 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
+  const touchingRight = checkCollision(dt, player.x + offX + 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
 
   // coyote timer
   if (touchingLeft) {
@@ -1275,6 +1304,13 @@ let lastTime = 0
 function platformerLoop(timestamp) {
   let dt = deltaTime(timestamp)
   let timeScale = dt * 60
+
+  // handle dissipations
+  player.dissipations.forEach(dissipation => {
+    if (dissipation.timer > 0) {
+      dissipation -= timeScale
+    }
+  })
   if (!player.died) {
     updatePhysics(timeScale)
   }

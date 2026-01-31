@@ -1,5 +1,5 @@
 {
-  "path": "assets/16x16/",
+  "path": "assets/large/",
   "name": "16x16",
   "characterFile": "player.png",
   "tiles": [
@@ -21,17 +21,6 @@
       "id": 2,
       "name": "Spikes",
       "file": "spikes.png",
-      "category": "hazards",
-      "type": "rotation",
-      "triggerAdjacency": false,
-      "mechanics": [
-        "killOnTouch"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "Double Spikes",
-      "file": "double-spikes.png",
       "category": "hazards",
       "type": "rotation",
       "triggerAdjacency": false,
@@ -85,17 +74,6 @@
       "triggerAdjacency": false,
       "mechanics": [
         "killOnTouch"
-      ]
-    },
-    {
-      "id": 8,
-      "name": "crate",
-      "file": "crate.png",
-      "category":"blocks",
-      "type": "standalone",
-      "triggerAdjacency": false,
-      "mechanics": [
-
       ]
     },
     {
