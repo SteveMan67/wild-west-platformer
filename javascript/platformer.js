@@ -717,6 +717,7 @@ function updateLevelSize(width, height) {
 
 function addTileSelection() {
   const categoryBlocks = document.querySelector('.category-blocks')
+  categoryBlocks.innerHTML = ''
   for (let i = 1; i < editor.tileset.length; i++) {
     if (editor.tileset[i]) {
       let div = document.createElement('div')
