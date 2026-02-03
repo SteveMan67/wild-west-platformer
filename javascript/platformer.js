@@ -46,7 +46,23 @@ function zoomMap(zoomDirectionIsIn) {
   editor.tileSize = newZoom
 }
 
-function changeSelectedTile(up) {
+function changeSelectedTile(tileId) {
+  console.log(tileId)
+  if (editor.selectedTile !== editor.lastSelectedTiles[1] && editor.selectedTile != 0) {
+    editor.lastSelectedTiles[1] = editor.selectedTile
+  }
+  if (tileId == "last") { 
+    editor.selectedTile = editor.lastSelectedTiles[0]
+    editor.lastSelectedTiles.unshift(editor.lastSelectedTiles[1])
+    editor.lastSelectedTiles.pop()
+  } else {
+    editor.lastSelectedTiles.shift()
+    editor.lastSelectedTiles.push(tileId)
+    editor.selectedTile = tileId
+  } 
+}
+
+function scrollCategoryTiles(up) {
   let currentSelectedTiles = document.querySelectorAll(".tile-select-container")
   currentSelectedTiles = Array.from(currentSelectedTiles).filter(f => f.style.display !== "none")
   if (currentSelectedTiles.length !== 0) {
@@ -70,7 +86,7 @@ function sortByCategory(category) {
       tileSelect.style.display = 'none'
     }
     if (lowestIndexBlock) {
-      editor.selectedTile = Number(lowestIndexBlock)
+      changeSelectedTile(Number(lowestIndexBlock))
     }
   })
   updateCanvasSize()
@@ -139,9 +155,9 @@ categories.forEach(category => {
 
 document.addEventListener('wheel', (e) => {
   if (e.wheelDelta > 0) {
-    changeSelectedTile(true)
+    scrollCategoryTiles(true)
   } else {
-    changeSelectedTile(false)
+    scrollCategoryTiles(false)
   }
 })
 
@@ -453,6 +469,8 @@ async function loadTileset(manifestPath) {
 
 let mode = "editor"
 
+const enemies = []
+
 const player = {
   dieCameraTime: 30, // frames
   dieCameraTimer: 30,
@@ -503,7 +521,7 @@ const editor = {
   playerSpawn: {x: 0, y: 0},
   tileSize: 32,
   selectedTile: 1,
-  lastSelectedTiles: [2, 1],
+  lastSelectedTiles: [2, 1], // [1] is the current selected tile
   map: null,
   width: 100,
   height: 50,
@@ -757,8 +775,7 @@ function addTileSelection() {
       div.addEventListener('mousedown', (e) => {
         e.preventDefault()
         editor.lastSelectedTiles.shift()
-        editor.selectedTile = Number(div.dataset.tile)
-        editor.lastSelectedTiles.push(editor.selectedTile)
+        changeSelectedTile(Number(div.dataset.tile))
       })
     }
   }
@@ -798,7 +815,11 @@ function init() {
   })
 }
 
+
 function initEditor() {
+  enemies.forEach(enemy => 
+    enemies.pop()
+  )
   lastTime = 0
   mode = "editor"
   ctx.imageSmoothingEnabled = false
@@ -827,6 +848,32 @@ function getJumpSpeed(jumpLengthInTiles, jumpForce, yInertia, tilesize) {
   return distance / frames
 }
 
+function scanLevelOnPlay() {
+  // enemies
+  const tiles = editor.map.tiles
+  for (let i = 0; i < tiles.length; i++) {
+    const raw = tiles[i]
+    const tileId = raw >> 4
+    if (tileId != 0 && editor.tileset[tileId] && editor.tileset[tileId].type == "enemy") {
+      console.log(raw)
+      const ty = Math.floor(i / editor.map.w)
+      const tx = i % editor.map.w
+      const worldY = ty * player.tileSize
+      const worldX = tx * player.tileSize
+      const enemy = {
+        x: worldX,
+        y: worldY,
+        vx: 0,
+        vy: 0,
+        tileId: tileId,
+        speed: 5,
+        direction: 1
+      }
+      enemies.push(enemy)
+    }
+  }
+}
+
 function initPlatformer() {
   lastTime = 0
   player.w = player.tileSize
@@ -843,6 +890,7 @@ function initPlatformer() {
   player.y = editor.playerSpawn.y * player.tileSize
   player.lastCheckpointSpawn = { x: 0, y: 0 }
   player.collectedCoinList = []
+  scanLevelOnPlay()
   platformerLoop()
 }
 
@@ -866,7 +914,10 @@ function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
       if (editor.tileset[tileId] && editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("hidden") && mode == 'play') {
         showTile = false
       }
-      if (player.collectedCoinList.includes(y * map.w + x) && mode == 'play') {
+      if (player.collectedCoinList.includes(y * map.w + x) && mode === 'play') {
+        showTile = false
+      }
+      if (selectedTile.type == 'enemy' && mode == 'play') {
         showTile = false
       }
       if (selectedTile.type == 'adjacency' && showTile) {
@@ -874,6 +925,8 @@ function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
       } else if (selectedTile.type == "rotation" && showTile) {
         ctx.drawImage(selectedTile.images[raw & 15], scrX, scrY, tileSize, tileSize)
       } else if (selectedTile.type == 'standalone' && showTile) {
+        ctx.drawImage(selectedTile.image, scrX, scrY, tileSize, tileSize)
+      } else if (selectedTile.type == 'enemy' && showTile) {
         ctx.drawImage(selectedTile.image, scrX, scrY, tileSize, tileSize)
       }
     }
@@ -886,8 +939,6 @@ function killPlayer() {
   player.died = true
   player.dieCameraTimer = player.dieCameraTime
   player.dieCameraStart = { x: player.cam.x, y: player.cam.y}
-  console.log(player.cam, player.dieCameraStart)
-  console.log(getCameraCoords())
   if (player.lastCheckpointSpawn.y !== 0 && player.lastCheckpointSpawn.x !== 0) {
     player.x = player.lastCheckpointSpawn.x * player.tileSize
     player.y = player.lastCheckpointSpawn.y * player.tileSize
@@ -898,7 +949,7 @@ function killPlayer() {
 }
 
 function endLevel() {
-  mode = "editor" 
+  mode = "editor"
   setTimeout(initEditor, 1)
 }
 
@@ -1299,6 +1350,57 @@ function getCameraCoords() {
   return {x: x, y: y}
 }
 
+function aabbIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function updateEnemyPhysics(dt) {
+  const gravity = (0.7 * player.yInertia) + 0.5
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const enemy = enemies[i]
+    enemy.vy += gravity * dt
+    enemy.vx = enemy.speed * enemy.direction
+    enemy.x += enemy.vx * dt
+    if (checkCollision(dt, enemy.x, enemy.y, player.tileSize, player.tileSize)) {
+      if (enemy.vx > 0) {
+        const hitright = enemy.x + player.tileSize
+        enemy.x = (Math.floor(hitright / player.tileSize) * player.tileSize) - player.tileSize
+        enemy.direction *= -1
+      } else if (enemy.vx < 0) {
+        const hitLeft = enemy.x
+        enemy.x = (Math.floor(hitLeft / player.tileSize) + 1) * player.tileSize
+        enemy.direction *= -1
+      }
+      enemy.vx = 0
+    } 
+
+    enemy.y += enemy.vy * dt
+    enemy.grounded = false
+
+    if (checkCollision(dt, enemy.x, enemy.y, player.tileSize, player.tileSize)) {
+      if (enemy.vy > 0) {
+        const hitBottom = enemy.y + player.tileSize
+        const tileTop = Math.floor(hitBottom / player.tileSize) * player.tileSize
+        enemy.y = tileTop - player.tileSize
+        enemy.grounded = true
+      } else if (enemy.vy < 0) {
+        enemy.y = (Math.floor(enemy.y / player.tileSize) + 1) * player.tileSize
+      }
+      enemy.vy = 0
+    }
+
+    if (enemy.y > editor.map.h * player.tileSize) {
+      enemies.splice(i, 1)
+    }
+  }
+}
+
+function drawEnemies(dt) {
+  enemies.forEach(enemy => {
+    ctx.drawImage(editor.tileset[enemy.tileId].image, enemy.x - player.cam.x, enemy.y - player.cam.y, player.tileSize, player.tileSize)
+  })
+}
+
 function deltaTime(timestamp) {
   if (!timestamp) timestamp = performance.now()
   if (lastTime === 0) lastTime = timestamp
@@ -1319,6 +1421,7 @@ function platformerLoop(timestamp) {
   if (!player.died) {
     updatePhysics(timeScale)
   }
+  updateEnemyPhysics(timeScale)
   // don't update the camera if the player is in the middle section of the screen
   if (!player.died) {
     player.cam.x = getCameraCoords().x
@@ -1362,6 +1465,7 @@ function platformerLoop(timestamp) {
   if (!player.died) {
     drawPlayer(timeScale)
   }
+  drawEnemies(timeScale)
 
   if (mode == 'play') {
     requestAnimationFrame(platformerLoop)
@@ -1451,10 +1555,7 @@ function levelEditorLoop(timestamp) {
 
   if (input.keys[" "]) {
     if (!spaceDown) {
-      const otherTile = editor.lastSelectedTiles[0]
-      editor.lastSelectedTiles.shift()
-      editor.lastSelectedTiles.push(otherTile)
-      editor.selectedTile = editor.lastSelectedTiles[1]
+      changeSelectedTile("last")
       spaceDown = true
     }
   } else {
