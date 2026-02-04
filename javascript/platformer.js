@@ -1095,9 +1095,6 @@ function checkCollision(dt, x, y, w, h, simulate = false) {
         if (tile && tile.mechanics && tile.mechanics.includes("dissipate")) {
           console.log(idx)
           const dissipation = player.dissipations.find(d => d.tileIdx === idx)
-          if (dissipation) {
-            console.log(dissipation)
-          }
           if (dissipation && dissipation.timer <= dissipation.timeToDissipate && dissipation.timer > 0) {
             continue
           }
