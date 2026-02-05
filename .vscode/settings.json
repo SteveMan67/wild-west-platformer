@@ -1,3 +1,16 @@
 {
-  "liveServer.settings.port": 5501
+  "liveServer.settings.port": 5501,
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Platformed Dev",
+      "database": "postgres",
+      "username": "postgres",
+      "password": "PopptotheTop7!"
+    }
+  ]
 }

@@ -8,7 +8,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "& { $env:DATABASE_URL='postgres://postgres:PopptotheTop7!@localhost:1050/postgres'; bun run ./backend/server.ts }"
+        "& { $env:DATABASE_URL='postgres://postgres:PopptotheTop7!@localhost:5432/postgres'; bun run ./backend/server.ts }"
       ],
       "group": { "kind": "build", "isDefault": true },
       "presentation": { "reveal": "always", "panel": "shared" },
