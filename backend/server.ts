@@ -7,7 +7,6 @@ const sql = postgres(DATABASE_URL)
 const server = Bun.serve({
   port: 1010,
   async fetch(req) {
-    console.log(await crypto.randomUUID())
     const url = new URL(req.url)
     const pathname = url.pathname
     const cookies = (req as any).cookies
@@ -21,17 +20,18 @@ const server = Bun.serve({
     if (pathname == "/api/login" && req.method == "POST") {
       try {
         const {username, password} = await req.json()
-        console.log(username, password)
+        const deleteOldSessions = await sql`
+          DELETE FROM sessions WHERE expires_at < NOW()
+        `
         if (!username) {
           return new Response("No username provided", { status: 400})
         }
         if (!password) {
           return new Response("No password provided", { status: 400})
         }
-        console.log(username, password)
         const rows = await sql`select id, password_hash from users where username = ${username} limit 1`
         const user = rows[0]
-        if (!user) return new Response("Invalid credentials", {status: 401})
+        if (!user.id) return new Response("Username does not exist", {status: 404})
   
         const valid = await Bun.password.verify(password, user.password_hash)
         if (!valid) {
@@ -41,18 +41,19 @@ const server = Bun.serve({
         // add cookie to sessions and set the cookie in the response header
         const uuid = crypto.randomUUID()
         const hashedCookie = await Bun.password.hash(uuid)
-  
-  
-        const setSession = await sql`
-        insert into sessions(token_hash, expires_at) 
-        values (${hashedCookie}, ${Date.now() + 60 * 60 * 24 * 14})
+
+        const sessionId = await sql`
+          insert into sessions(token_hash, expires_at, user_id) 
+          values (${hashedCookie}, ${Date.now() + (60 * 60 * 24 * 14)}, ${user.id})
+          returning id
         `
   
         return new Response("Login successful", { status: 200, headers: {
-          "Set-Cookie": `session-id=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
+          "Set-Cookie": `session-id=${uuid}, id=${sessionId}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
         }})
 
       } catch (e) {
+        console.error(e)
         return new Response("Bad Request", { status: 400 })
       }
 
@@ -68,7 +69,8 @@ const server = Bun.serve({
 
           // handle duplicate usernames 
           const duplicateUsernames = await sql`SELECT username FROM users WHERE username = ${username}`
-          if (duplicateUsernames) {
+          console.log(duplicateUsernames)
+          if (duplicateUsernames[0]) {
             return new Response("Username Already Exists", { status: 409 })
           }
 
@@ -80,16 +82,18 @@ const server = Bun.serve({
             RETURNING id
           `
           // set their session cookie so they don't have to log in after registering
-          // todo: update sessions table with user_id column
-          const setSession = await sql`
+          const expiresAt = Date.now() + (60 * 60 * 24 * 14)
+          const sessionId = await sql`
             INSERT INTO sessions(token_hash, expires_at, user_id) 
-            VALUES(${hashedCookie}, ${Date.now() + 60 * 60 * 24 * 14}, ${userId})
+            VALUES(${hashedCookie}, ${expiresAt}, ${userId})
+            RETURNING id
           `
           return new Response("Sucessful Register", { status: 200, headers: {
-            "Set-Cookie": `session-id=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
+            "Set-Cookie": `session-id=${uuid}, token=${sessionId}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
           }})
         }
-      } catch {
+      } catch (e) {
+        console.error(e)
         return new Response("Bad Response", { status: 400 })
       }
     }
