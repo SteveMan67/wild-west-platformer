@@ -18,7 +18,6 @@ function getCookies(reqest: Request) {
 const server = Bun.serve({
   port: 1010,
   async fetch(req) {
-    console.log(req)
     const url = new URL(req.url)
     const pathname = url.pathname
 
@@ -159,7 +158,6 @@ const server = Bun.serve({
         const imageUrl = raw.image_url ? raw.image_url : ""
         const description = raw.description ? raw.description : ""
         const levelStyle = raw.level_style ? raw.level_style : ""
-        console.log(owner)
         const insertInto = await sql`
           INSERT INTO levels (name, data, owner, created_at, width, height, tags, image_url, description, level_style)
           VALUES (${name}, ${level}, ${Number(owner)}, ${createdAt}, ${width}, ${height}, ${tags}, ${imageUrl}, ${description}, ${levelStyle})
@@ -171,6 +169,35 @@ const server = Bun.serve({
     }
 
     // ADD: delete level
+    if (pathname == "/api/delete" && req.method == "DELETE") {
+      const raw = await req.json()
+      const levelId = raw.levelId
+      const cookies = getCookies(req)
+      const sessionId = cookies["session-id"]
+      const token = cookies["token"]
+      if (!sessionId || !token) {
+        return new Response("Unauthorized logic", { status: 401 })
+      }
+      const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
+      if (await authenticate(sessionCookie)) {
+        const user = await sql`
+          SELECT user_id FROM sessions WHERE id = ${sessionId} 
+        `
+        const levelOwner = await sql`
+          SELECT owner FROM levels WHERE id = ${levelId}
+        `
+        if (!levelOwner.length) {
+          return new Response("Level does not exist", { status: 404 })
+        }
+        if (levelOwner[0].owner != user[0].user_id) {
+          return new Response("Unauthorized", { status: 401 })
+        }
+        const deleteLevel = await sql`
+          DELETE FROM levels WHERE id = ${levelId}
+        `
+        return new Response("Level Deleted Sucessfully", { status: 200 })
+      }
+    }
     // ADD: modify level/level metadata
     // ADD fetch levels per user
 
