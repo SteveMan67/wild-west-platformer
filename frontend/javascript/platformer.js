@@ -1161,7 +1161,7 @@ function updatePhysics(dt) {
 
   //determine whether jump was just pressed down
   let isJumping = false;
-  if (input.keys['w'] || input.keys[' '] || input.keys['ArrowUp']) {
+  if (key("up")) {
     if (!lastJumpInput) {
       player.jumpBufferTimer = player.jumpBuffer;
       player.wallCoyoteTimer = 0
@@ -1194,7 +1194,7 @@ function updatePhysics(dt) {
   const jumpControl = player.decreaseAirControl && !player.grounded ? 1 : 1
   const currentControl = jumpControl * player.controlMultiplier
   let activeInput = false
-  if (key("left")) {
+  if (key("left") && !key("right")) {
     activeInput = true
     if (player.vx > -player.speed) {
       player.vx -= player.xInertia * 1 * currentControl * dt
@@ -1202,7 +1202,7 @@ function updatePhysics(dt) {
       player.vx = -player.speed
     }
   }
-  if (key("right")) {
+  if (key("right") && !key("left")) {
     activeInput = true
     if (player.vx < player.speed) {
       player.vx += player.xInertia * 1 * currentControl * dt
