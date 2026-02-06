@@ -1,15 +1,26 @@
 import postgres from "postgres"
+import { authenticate, type SessionCookie } from "./auth.ts"
+import { BunRequest } from "bun"
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:4321/postgres"
 const sql = postgres(DATABASE_URL)
 
+function getCookies(reqest: Request) {
+  const cookieHeader = reqest.headers.get("Cookie") ?? ""
+  const cookies: Record<string, string> = {}
+  cookieHeader.split(",").forEach(c => {
+    const [key, ...v] = c.split("=")
+    if(key) cookies[key.trim()] = v.join("=").trim()
+  })
+  return cookies
+}
 
 const server = Bun.serve({
   port: 1010,
   async fetch(req) {
+    console.log(req)
     const url = new URL(req.url)
     const pathname = url.pathname
-    const cookies = (req as any).cookies
 
     // --- health ---
     if (pathname == "/api/ping") {
@@ -49,7 +60,7 @@ const server = Bun.serve({
         `
   
         return new Response("Login successful", { status: 200, headers: {
-          "Set-Cookie": `session-id=${uuid}, id=${sessionId}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
+          "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
         }})
 
       } catch (e) {
@@ -89,7 +100,7 @@ const server = Bun.serve({
             RETURNING id
           `
           return new Response("Sucessful Register", { status: 200, headers: {
-            "Set-Cookie": `session-id=${uuid}, token=${sessionId}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
+            "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
           }})
         }
       } catch (e) {
@@ -123,7 +134,47 @@ const server = Bun.serve({
       }
     }
 
-    return new Response("Not Found", { status: 404})
+    // --- upload level --- 
+    if (pathname == "/api/upload" && req.method == "POST") {
+      const raw = await req.json()
+      const level = raw.level
+      const cookies = getCookies(req)
+      const sessionId = cookies["session-id"]
+      const token = cookies["token"]
+      if (!sessionId || !token) {
+        return new Response("Unauthorized logic", { status: 401 })
+      }
+      const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
+      
+      if (await authenticate(sessionCookie)) {
+        const user = await sql`
+          SELECT user_id FROM sessions WHERE id = ${sessionId} 
+        `
+        const name = raw.name ? raw.name : "My New Level"
+        const createdAt = Date.now()
+        const width = raw.level.width ? raw.level.width : 100
+        const height = raw.level.height ? raw.level.height : 50
+        const owner = user[0].user_id
+        const tags = raw.tags ? raw.tags : []
+        const imageUrl = raw.image_url ? raw.image_url : ""
+        const description = raw.description ? raw.description : ""
+        const levelStyle = raw.level_style ? raw.level_style : ""
+        console.log(owner)
+        const insertInto = await sql`
+          INSERT INTO levels (name, data, owner, created_at, width, height, tags, image_url, description, level_style)
+          VALUES (${name}, ${level}, ${Number(owner)}, ${createdAt}, ${width}, ${height}, ${tags}, ${imageUrl}, ${description}, ${levelStyle})
+        `
+        return new Response("Level Added", { status: 200 })
+      } else {
+        return new Response("Invalid Auth", { status: 401 })
+      }
+    }
+
+    // ADD: delete level
+    // ADD: modify level/level metadata
+    // ADD fetch levels per user
+
+    return new Response("Not Found", { status: 404 })
   }
 })
 
