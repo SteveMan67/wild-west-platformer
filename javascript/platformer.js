@@ -426,7 +426,7 @@ function updatePhysics(dt) {
   }
   
   if (player.jumpBufferTimer > 0 && player.coyoteTimer > 0) {
-    player.vy = - player.jump
+    player.vy = -player.jump
     player.jumpBufferTimer = 0
     player.coyoteTimer = 0
     player.grounded = false
