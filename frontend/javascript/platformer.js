@@ -20,7 +20,7 @@ function decodeRLE(rle) {
   return out
 }
 
-function importMap(e) {
+export function importMap(e) {
   const file = e.target.files && e.target.files[0]
   if (!file) return 
   const reader = new FileReader()
@@ -28,19 +28,13 @@ function importMap(e) {
   reader.onload = () => {
     const json = JSON.parse(reader.result)
     player.jumpHeight = json.jumpHeight
-    jumpHeightSlider.value = json.jumpHeight
     player.jumpWidth = json.jumpWidth
-    jumpWidthSlider.value = json.jumpWidth
     player.yInertia = json.yInertia
-    verticalInertiaSlider.value = json.yInertia
     player.xInertia = json.xInertia
-    horizontalInertiaSlider.value = json.xInertia
     if (json.bouncePadHeight) {
-      bouncePadHeightSlider.value = json.bouncePadHeight
       player.bouncePadHeight = json.bouncePadHeight
     }
     if (json.zoom) {
-      zoomSlider.value = (json.zoom / (32 / 0.6))
       player.tileSize = json.zoom
     }
     if (json.tilesetPath) {

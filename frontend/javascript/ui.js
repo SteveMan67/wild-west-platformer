@@ -1,4 +1,4 @@
-import { createMap } from "./platformer.js"
+import { createMap, importMap } from "./platformer.js"
 import { mode, setMode } from "./site.js"
 import { state } from "./state.js"
 import { ctx, canvas, updateTileset } from "./renderer.js"
@@ -13,6 +13,19 @@ export function toggleEditorUI(on) {
     grid.classList.add("grid-uihidden")
   }
   updateCanvasSize()
+}
+
+export function updateSlidersOnLoad(json) {
+  jumpWidthSlider.value = json.jumpWidth
+  verticalInertiaSlider.value = json.yInertia
+  horizontalInertiaSlider.value = json.x
+  jumpHeightSlider.value = json.jumpHeightInertia
+  if (json.bouncePadHeight) {
+    bouncePadHeightSlider.value = json.bouncePadHeight
+  }
+  if (json.zoom) {
+    zoomSlider.value = (json.zoom / (32 / 6))
+  }
 }
 
 export function updateCanvasSize() {
