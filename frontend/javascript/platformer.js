@@ -210,19 +210,31 @@ function killPlayer() {
 
 const tileMaskCache = new Map()
 
-function checkPixelCollsion(tileId, tx, ty, px, py, pw, ph) {
+function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
+  const tileId = tile >> 4
   let mask = tileMaskCache.get(tileId)
   if (!mask) {
     const tile = editor.tileset[tileId]
     if (!tile) return false
-
-    let img = tile.image
-    if (!img && tile.images && tile.images[0]) img = tile.images[0]
+    console.log(tile)
+    let img
+    if (tile.images && tile.images.length > 0) {
+      // calculate the frame 
+      if (tile.type == "rotation") {
+        console.log("rotation")
+        img = tile.images[tile & 3]
+      } else {
+        img = tile.images[0]
+      }
+      console.log(img, img.width, img.height)
+    } else {
+      img = tile.image
+    }
     if (!img) return false
 
     const c = document.createElement('canvas')
-    c.width = img.naturalWidth
-    c.height = img.naturalHeight
+    c.width = img.height || img.naturalHeight
+    c.height = img.width || img.naturalWidth
     const ctx = c.getContext('2d')
     ctx.drawImage(img, 0, 0)
     const data = ctx.getImageData(0, 0, c.width, c.height).data
@@ -242,11 +254,17 @@ function checkPixelCollsion(tileId, tx, ty, px, py, pw, ph) {
 
   for (let y = intersectionTop; y < intersectionBottom; y += 2) {
     for (let x = intersectionLeft; x < intersectionRight; x += 2) {
-      const localX = Math.floor((x - tileWorldX) / player.tileSize * mask.w)
-      const localY = Math.floor((y - tileWorldY) / player.tileSize * mask.h)
+      const u = (x - tileWorldX) / player.tileSize;
+      const v = (y - tileWorldY) / player.tileSize;
+      
+      const localX = Math.floor(u * mask.w);
+      const localY = Math.floor(v * mask.h);
+      
+      if (localX < 0 || localX >= mask.w || localY < 0 || localY >= mask.h) continue;
 
-      const index = (localY * mask.w + localX) * 4 + 3
-      if (mask.data[index] > 10) {
+      const index = (localY * mask.w + localX) * 4 + 3;
+      
+      if (mask.data[index] > 10) { 
         return true;
       }
     }
@@ -258,7 +276,7 @@ function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
   const mechanics = editor.tileset[tileId].mechanics
   if (!mechanics) return
   if (mechanics.includes("killOnTouch")) {
-    if (checkPixelCollsion(tileId, tx, ty, x, y, w, h)) {
+    if (checkPixelCollsion(editor.map.tiles[tileIdx], tx, ty, x, y, w, h)) {
       killPlayer()
     }
   }
@@ -266,7 +284,7 @@ function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
     endLevel()
   }
   if (mechanics.includes("bouncePad")) {
-    if (checkPixelCollsion(tileId, tx, ty, x, y, w, h)) {
+    if (checkPixelCollsion(editor.map.tiles[tileIdx], tx, ty, x, y, w, h)) {
       const idx = ty * editor.map.w + tx
       const bounceTile = editor.map.tiles[idx]
       if ((bounceTile & 15) == 0) {
@@ -284,7 +302,7 @@ function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
     player.lastCheckpointSpawn = { x: tx, y: ty }
   }
   if (mechanics.includes("coin")) {
-    if (checkPixelCollsion(tileId, tx, ty, x, y, w, h)) {
+    if (checkPixelCollsion(editor.map.tiles[tileIdx], tx, ty, x, y, w, h)) {
       const idx = ty * editor.map.w + tx
       player.collectedCoins++
       player.collectedCoinList.push(idx)
@@ -344,7 +362,7 @@ function checkCollision(dt, x, y, w, h, simulate = false) {
           continue
         }
         if (tile && tile.mechanics && tile.mechanics.includes("pixelCollision")) {
-          return checkPixelCollsion(tileId, px,py, x, y, w, h)
+          return checkPixelCollsion(editor.map.tiles[idx], px,py, x, y, w, h)
         }
         if (tile && tile.mechanics && tile.mechanics.includes("dissipate")) {
           const dissipation = player.dissipations.find(d => d.tileIdx === idx)
