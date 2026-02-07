@@ -2,6 +2,14 @@ import postgres from "postgres"
 import { authenticate, type SessionCookie } from "./auth.ts"
 import { BunRequest } from "bun"
 
+// CORS stuf
+
+
+function withCors(respInit: ResponseInit, CORS: any) {
+  respInit.headers = { ...(respInit.headers||{}), ...CORS }
+  return respInit
+}
+
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:4321/postgres"
 const sql = postgres(DATABASE_URL)
 
@@ -17,36 +25,52 @@ function getCookies(reqest: Request) {
 
 const server = Bun.serve({
   port: 1010,
-  hostname: "0.0.0.0",
   async fetch(req) {
     const url = new URL(req.url)
     const pathname = url.pathname
 
+    const ALLOWED_ORIGINS = ['http://localhost:5501', 'http://localhost:5500', "http://127.0.0.1:5501"]
+    const origin = req.headers.get('Origin') || req.headers.get('origin');
+    const corsOrigin = ALLOWED_ORIGINS.includes(origin as string) ? origin : 'null';
+    const CORS = {
+      'Access-Control-Allow-Origin': corsOrigin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+    };
+
+    if (req.method == "OPTIONS") {
+      console.log("recieved a OPTIONS request")
+      return new Response(null, { status: 204, headers: CORS })
+    }
+
+    console.log(pathname, req.method)
     // --- health ---
     if (pathname == "/api/ping") {
-      return new Response("pong")
+      return new Response("pong", { status: 200, headers: CORS})
     }
 
     // --- login ---
-    if (pathname == "/api/login" && req.method == "POST") {
+    if (pathname == "/api/login" && req.method == "POST") { 
+      console.log("received fetch")
       try {
         const {username, password} = await req.json()
         const deleteOldSessions = await sql`
           DELETE FROM sessions WHERE expires_at < NOW()
         `
         if (!username) {
-          return new Response("No username provided", { status: 400})
+          return new Response("No username provided", withCors({ status: 400}, CORS))
         }
         if (!password) {
-          return new Response("No password provided", { status: 400})
+          return new Response("No password provided", withCors({ status: 400}, CORS))
         }
         const rows = await sql`select id, password_hash from users where username = ${username} limit 1`
         const user = rows[0]
-        if (!user.id) return new Response("Username does not exist", {status: 404})
+        if (!user.id) return new Response("Username does not exist", withCors({status: 404}, CORS))
   
         const valid = await Bun.password.verify(password, user.password_hash)
         if (!valid) {
-          return new Response("Invalid credentials", {status: 401})
+          return new Response("Invalid credentials", withCors({status: 401}, CORS))
         }
   
         // add cookie to sessions and set the cookie in the response header
@@ -58,10 +82,14 @@ const server = Bun.serve({
           values (${hashedCookie}, ${Date.now() + (60 * 60 * 24 * 14)}, ${user.id})
           returning id
         `
-  
-        return new Response("Login successful", { status: 200, headers: {
+
+        console.log(withCors({ status: 200, headers: {
           "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
-        }})
+        }}, CORS))
+  
+        return new Response("Login successful", withCors({ status: 200, headers: {
+          "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
+        }}, CORS))
 
       } catch (e) {
         console.error(e)
