@@ -177,5 +177,39 @@ export function levelEditorLoop(dt) {
   }
   ctx.globalAlpha = 1
 }
+export function updateLevelSize(width, height) {
+  // need to update the array with new values or slice old ones 
+  // and also update editor object
+  // note: add new columns on the right of the map
+  // note: and new rows on top and same for removing
+  let tiles = Array.from(editor.map.tiles)
+  if (editor.width > width) {
+    const diff = width - editor.width
+    for (let h = 0; h < editor.height; h++) {
+      // delete the end of the rows
+      tiles.splice((h * width) + width, editor.width - width)
+    }
+  } else if (editor.width < width) {
+    // !!Working!!
+    const diff = Math.abs(width - editor.width)
+    for (let h = 0; h < editor.height; h++) {
+      tiles.splice(((h * width) + width - diff), 0, ...Array(diff).fill(0))
+    }
+  }
+  if (editor.height > height) {
+    // !!Working!!
+    tiles.splice(0, (editor.height - height) * width)
+  } else if (editor.height < height) {
+    // !!Working!!
+    Array((height - editor.height) * width).fill(0)
+    tiles.unshift(...Array((height - editor.height) * width).fill(0))
+  }
+
+  editor.map.tiles = new Uint16Array(tiles)
+  editor.width = width
+  editor.height = height
+  editor.map.w = width
+  editor.map.h = height
+}
 
 

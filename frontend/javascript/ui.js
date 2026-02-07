@@ -1,4 +1,5 @@
-import { createMap, importMap } from "./platformer.js"
+import { createMap } from "./file-utils.js"
+import { importMap } from "./file-utils.js"
 import { mode, setMode } from "./site.js"
 import { state } from "./state.js"
 import { ctx, canvas, updateTileset } from "./renderer.js"

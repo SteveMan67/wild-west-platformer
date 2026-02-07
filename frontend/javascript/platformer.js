@@ -1,172 +1,10 @@
 import { toggleEditorUI, updateCanvasSize, sortByCategory } from "./ui.js"
-import { canvas, ctx, drawMap, drawPlayer, updateTileset } from "./renderer.js"
+import { canvas, ctx, drawEnemies, drawMap, drawPlayer, getCameraCoords } from "./renderer.js"
 import { endLevel, key } from "./site.js"
 import { state } from "./state.js"
+import { createMap } from "./file-utils.js"
 const { player, editor } = state
 
-
-function decodeRLE(rle) {
-  const out = []
-  for (let i = 0; i < rle.length; i++) {
-    const pair = rle[i]
-    if (Array.isArray(pair)) {
-      const tile = pair[0]
-      const count = pair[1]
-      for (let j = 0; j < count; j++) out.push(tile)
-    } else {
-      out.push(pair)
-    }
-  }
-  return out
-}
-
-export function importMap(e) {
-  const file = e.target.files && e.target.files[0]
-  if (!file) return 
-  const reader = new FileReader()
-  reader.onerror = () => console.error('failed to read file', reader.error)
-  reader.onload = () => {
-    const json = JSON.parse(reader.result)
-    player.jumpHeight = json.jumpHeight
-    player.jumpWidth = json.jumpWidth
-    player.yInertia = json.yInertia
-    player.xInertia = json.xInertia
-    if (json.bouncePadHeight) {
-      player.bouncePadHeight = json.bouncePadHeight
-    }
-    if (json.zoom) {
-      player.tileSize = json.zoom
-    }
-    if (json.tilesetPath) {
-      updateTileset(json.tilesetPath)
-    }
-    player.wallJump = json.wallJump
-    const tileLayer = json.layers.find(l => l.type === "tilelayer")
-    const rotationLayer = json.layers.find(l => l.type === "rotation")
-    const rawRotationLayer = decodeRLE(rotationLayer.data)
-    let rawTileLayer = decodeRLE(tileLayer.data)
-    if (rawTileLayer.length !== json.width * json.height) {
-      console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height)
-    }
-    rawTileLayer = rawTileLayer.map(id => id << 4)
-    rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height)
-    console.log(rawTileLayer)
-    for (let i = 0; i < rawTileLayer.length; i++) {
-      if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
-        rawTileLayer[i] += rawRotationLayer[i]
-      }
-      if (editor.tileset[rawTileLayer[i] >> 4].mechanics && editor.tileset[rawTileLayer[i] >> 4].mechanics.includes("spawn")) {
-        editor.playerSpawn.y = Math.floor(i / json.width)
-        editor.playerSpawn.x = i % json.width
-      }
-    }
-    editor.width = json.width
-    editor.height = json.height
-    const tiles = new Uint16Array(rawTileLayer)
-    const map = {
-      tiles, 
-      w: json.width,
-      h: json.height
-    }
-    editor.map = map
-  }
-  reader.readAsText(file)
-}
-
-function loadMap(path) {
-  return fetch(path)
-    .then(response => response.json())
-    .then(json => {
-      const tileLayer = json.layers.find(l => l.type === "tilelayer")
-      const rotationLayer = json.layers.find(l => l.type === "rotation")
-      const rawRotationLayer = decodeRLE(rotationLayer)
-      const rawTileLayer = decodeRLE(tileLayer.data)
-      if (rawTileLayer.length !== json.width * json.height) {
-        console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height)
-      }
-      rawTileLayer = rawTileLayer.map(id => id << 4)
-      for (let i = 0; i < rawTileLayer.length; i++) {
-        if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
-          rawTileLayer[i] = rawTileLayer[i] + rawRotationLayer[i]
-        }
-      }
-      editor.width = json.width
-      editor.height = json.height
-      let tiles = calculateAdjacencies(rawTileLayer, json.width, json.height)
-      tiles = new Uint16Array(tiles)
-      const map = {
-        tiles, 
-        w: json.width,
-        h: json.height
-      }
-      return map
-    })
-}
-
-function encodeRLE(list) {
-  const rle = []
-  let runVal = list[0]
-  let runCount = 1
-  for (let i = 1; i < list.length; i++) {
-    const v = list[i]
-    if (v === runVal) {
-      runCount++
-    } else {
-      if (runCount === 1) {
-        rle.push(runVal)
-      } else {
-        rle.push([runVal, runCount])
-      }
-      runVal = v
-      runCount = 1
-    }
-  }
-  if (runCount == 1) {
-    rle.push(runVal)
-  } else {
-    rle.push([runVal, runCount])
-  }
-  return rle
-}
-
-export function createMap(width, height, data) {
-  const json = {}
-  json.width = width
-  json.height = height
-  json.jumpHeight = player.jumpHeight
-  json.yInertia = player.yInertia
-  json.jumpWidth = player.jumpWidth
-  json.xInertia = player.xInertia
-  json.wallJump = player.wallJump
-  json.bouncePadHeight = player.bouncePadHeight
-  json.zoom = player.tileSize
-  json.tilesetPath = editor.tilesetPath
-  json.layers = []
-  const tileIdRLE = encodeRLE(data.map(id => id >> 4))
-  let mapLayer = {
-    "type": "tilelayer",
-    "name": "level",
-    "data": tileIdRLE
-  }
-  json.layers.push(mapLayer)
-
-  // encode layer with 2 bits of rotation data, 0-3 and run length encode it
-  let rotationList = []
-  for (let i = 0; i < data.length; i++) {
-    if (editor.tileset[data[i] >> 4].type == "rotation") {
-      rotationList.push(data[i] & 3)
-    } else {
-      rotationList.push(0)
-    }
-  }
-  const rotationRLE = encodeRLE(rotationList)
-  let rotationLayer = {
-    "type": "rotation",
-    "data": rotationRLE
-  }
-  json.layers.push(rotationLayer)
-  return json
-}
 
 function getVariant(num) {
   return num >> 4
@@ -175,61 +13,6 @@ function getVariant(num) {
 function getTileId(num) {
   return num & 15
 }
-
-export function loadPlayerSprites(playerImg) {
-  if (!playerImg) return 
-  const h = playerImg.naturalHeight
-  const w = playerImg.naturalWidth
-  const sprites = []
-
-  const count = Math.floor(w / h)
-  for (let i = 0; i < count; i++) {
-    const c = document.createElement('canvas')
-    c.width = h
-    c.height = h
-    const ctx = c.getContext('2d')
-    ctx.imageSmoothingEnabled = false
-    ctx.drawImage(playerImg, i *h, 0, h, h, 0, 0, h, h)
-    sprites.push(c)
-  }
-  player.sprites = sprites
-}
-
-export async function loadTileset(manifestPath) {
-  return fetch(manifestPath)
-  .then(response => response.json())
-  .then(manifest => {
-    
-    const promises = manifest.tiles.map(tileData => {
-      
-      if (!tileData.file) return Promise.resolve(tileData)
-        return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.src = manifest.path + tileData.file
-      img.onload = () => resolve({...tileData, image: img})
-      img.onerror = reject
-    })
-  })
-  
-      const characterPromise = new Promise((resolve) => {
-        if (!manifest.characterFile) return resolve(null)
-          const img = new Image()
-        img.src = manifest.path + manifest.characterFile
-        img.onload = () => resolve(img) 
-        img.onerror = () => resolve(null)
-      })
-      
-      return Promise.all([Promise.all(promises), characterPromise])
-      .then(([items, characterImage]) => {
-        const tileset = []
-        items.forEach(item => {
-          tileset[item.id] = item
-        })
-        return { tileset, characterImage }
-        })
-    })
-}
-
 
 export const enemies = []
 
@@ -240,58 +23,6 @@ function isStrip(img) {
       return w == h * 16
     }
   }
-}
-
-export function splitStripImages(tileset) {
-  // split strip images 
-  const newTileset = []
-  tileset.forEach(tile => {
-    if (!tile) return
-    if (tile.type === 'adjacency' && tile.image) {
-      // split the strip into different pieces here 
-      const h = tile.image.naturalHeight
-      const w = tile.image.naturalWidth
-      const sublist = []
-      for (let i = 0; i < 16; i++) {
-        const c = document.createElement('canvas')
-        c.width = h
-        c.height = h
-        const ctx = c.getContext('2d')
-        ctx.drawImage(tile.image, i * h, 0, h, h, 0, 0, h, h)
-
-        sublist.push(c)
-      }
-      newTileset[tile.id] = { ...tile, images: sublist }
-    } else if (tile.type == 'rotation') {
-      const h = tile.image.naturalHeight
-      const w = tile.image.naturalWidth
-      const sublist = []
-      if (w == h * 4) {
-        for (let i = 0; i < 4; i++) {
-          const c = document.createElement('canvas')
-          c.width = h
-          c.height = h
-          const ctx = c.getContext('2d')
-          ctx.drawImage(tile.image, i * h, 0, h, h, 0, 0, h, h)
-          sublist.push(c)
-        }
-        newTileset[tile.id] = { ...tile, images: sublist }
-      } else if (w == h * 8) {
-        for (let i = 0; i < 8; i++) {
-          const c = document.createElement('canvas')
-          c.width = h
-          c.height = h
-          const ctx = c.getContext('2d')
-          ctx.drawImage(tile.image, i * h, 0, h, h, 0, 0, h, h)
-          sublist.push(c)
-        }
-        newTileset[tile.id] = { ...tile, images: sublist }
-      }
-    } else {
-      newTileset[tile.id] = tile
-    }
-  })
-  return newTileset
 }
 
 function getMechanics(idx) {
@@ -306,7 +37,7 @@ function getMechanics(idx) {
   } 
 }
 
-function calculateAdjacencies(tiles, w, h) {
+export function calculateAdjacencies(tiles, w, h) {
   let out = []
   // calculate all the adjacencies in a given level
   for (let i = 0; i < w * h; i++) {
@@ -393,41 +124,6 @@ export function calcAdjacentAdjacency(centerTileIdx) {
   })
 
   return centerVal
-}
-
-function updateLevelSize(width, height) {
-  // need to update the array with new values or slice old ones 
-  // and also update editor object
-  // note: add new columns on the right of the map
-  // note: and new rows on top and same for removing
-  let tiles = Array.from(editor.map.tiles)
-  if (editor.width > width) {
-    const diff = width - editor.width
-    for (let h = 0; h < editor.height; h++) {
-      // delete the end of the rows
-      tiles.splice((h * width) + width, editor.width - width)
-    }
-  } else if (editor.width < width) {
-    // !!Working!!
-    const diff = Math.abs(width - editor.width)
-    for (let h = 0; h < editor.height; h++) {
-      tiles.splice(((h * width) + width - diff), 0, ...Array(diff).fill(0))
-    }
-  }
-  if (editor.height > height) {
-    // !!Working!!
-    tiles.splice(0, (editor.height - height) * width)
-  } else if (editor.height < height) {
-    // !!Working!!
-    Array((height - editor.height) * width).fill(0)
-    tiles.unshift(...Array((height - editor.height) * width).fill(0))
-  }
-
-  editor.map.tiles = new Uint16Array(tiles)
-  editor.width = width
-  editor.height = height
-  editor.map.w = width
-  editor.map.h = height
 }
 
 function getJumpHeight(heightInTiles, yInertia, tileSize) {
@@ -825,29 +521,6 @@ function updatePhysics(dt) {
 
 }
 
-function getCameraCoords() {
-  let x, y
-  if (player.x > player.cam.x + (canvas.width * 0.75)) {
-    // moving right
-    x = player.x - (canvas.width * 0.75)
-  } else if (player.x < player.cam.x + (canvas.width * 0.25)) {
-    // moving left
-    x = player.x - (canvas.width * 0.25)
-  } else {
-    x = player.cam.x
-  }
-  if (player.y > player.cam.y + (canvas.height * 0.5)) {
-    // moving down
-    y = player.y - (canvas.height * 0.5)
-  } else if (player.y < player.cam.y + (canvas.height * 0.25)) {
-    // moving up
-    y = player.y - (canvas.height * 0.25)
-  } else {
-    y = player.cam.y
-  }
-  return {x: x, y: y}
-}
-
 function aabbIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
@@ -919,12 +592,6 @@ function updateEnemyPhysics(dt) {
       enemies.splice(i, 1)
     }
   }
-}
-
-function drawEnemies(dt) {
-  enemies.forEach(enemy => {
-    ctx.drawImage(editor.tileset[enemy.tileId].image, enemy.x - player.cam.x, enemy.y - player.cam.y, player.tileSize, player.tileSize)
-  })
 }
 
 export function platformerLoop(dt) {

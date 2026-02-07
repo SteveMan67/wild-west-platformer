@@ -1,5 +1,8 @@
 import { initEditor } from "./editor.js";
-import { initPlatformer, loadPlayerSprites, loadTileset, platformerLoop, splitStripImages } from "./platformer.js";
+import { initPlatformer, platformerLoop } from "./platformer.js";
+import { splitStripImages } from "./file-utils.js";
+import { loadTileset } from "./file-utils.js";
+import { loadPlayerSprites } from "./file-utils.js";
 import { levelEditorLoop } from "./editor.js";
 import { addTileSelection, toggleEditorUI } from "./ui.js";
 import { canvas } from "./renderer.js";
