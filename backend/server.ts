@@ -230,6 +230,38 @@ const server = Bun.serve({
     // ADD: modify level/level metadata
     // ADD fetch levels per user
 
+    try {
+      const url = `./frontend${pathname}`
+      console.log(url, pathname)
+      const file = Bun.file(url)
+
+      const extension = String(pathname.split('.').pop()) || ""
+      let mime = "application/octet-stream"
+      switch (extension) {
+        case "css":
+          mime = "text/css; charset=utf-8"
+          break
+        case "js":
+          mime = "application/javascript; charset=utf-8"
+          break
+        case "html":
+          mime = "text/html; charset=utf-8"
+          break
+        case "png": 
+          mime = "image/png"
+          break
+        case "svg":
+          mime = "image/svg+xml"
+          break
+        case "json":
+          mime = "application/json; charset=utf-8"
+          break
+      }
+
+
+      return new Response(file, { status: 200, headers: { "Content-Type": mime, ...CORS}})
+    } catch {
+    }
     return new Response("Not Found", { status: 404 })
   }
 })
