@@ -128,9 +128,9 @@ const server = Bun.serve({
             VALUES(${hashedCookie}, ${expiresAt}, ${userId[0].id})
             RETURNING id
           `
-          return new Response("Sucessful Register", { status: 200, headers: {
+          return new Response("Sucessful Register", withCors({ status: 200, headers: {
             "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
-          }})
+          }}, CORS))
         }
       } catch (e) {
         console.error(e)
