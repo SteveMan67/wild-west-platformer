@@ -4,15 +4,10 @@
   "service": "app",
   "workspaceFolder": "/workspaces/platformed",
 
-  // Install Bun
-  "features": {
-    "ghcr.io/devcontainers/features/bun:1": {}
-  },
+  // REMOVE the features block entirely to avoid the ghcr.io error
 
-  // Forward the Bun server port (1010) and Postgres (5432)
   "forwardPorts": [1010, 5432],
 
-  // Configure VS Code
   "customizations": {
     "vscode": {
       "extensions": [
@@ -21,12 +16,7 @@
     }
   },
 
-  // Fix common permission issues
   "updateRemoteUserUID": true,
-
-  // Install dependencies automatically after creation
   "postCreateCommand": "bun install",
-
-  // Stop the containers when you close the codespace to save resources
   "shutdownAction": "stopCompose"
 }
