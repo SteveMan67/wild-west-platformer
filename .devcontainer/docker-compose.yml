@@ -2,22 +2,20 @@ version: '3.8'
 
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/base:bookworm
+    # Build from the local Dockerfile
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    
     volumes:
-      # Mount the parent directory (repo root) to the standard Codespaces path
       - ..:/workspaces/platformed:cached
     
-    # Set the working directory to match the mount
     working_dir: /workspaces/platformed
-    
-    # Keep the container running
     command: sleep infinity
     
-    # Connect to the db service
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
     
-    # Ensure it's on the same network as the db
     networks:
       - dev-network
 
