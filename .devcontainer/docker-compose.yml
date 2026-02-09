@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    # Use a standard devcontainer base image
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    volumes:
+      # Mount the root of the repo to /workspace
+      - ..:/workspace:cached
+    
+    # Overrides the default command so the container stays running
+    command: sleep infinity
+
+    # Set environment variable so your server.ts connects to the 'db' container
+    # instead of localhost, and uses the standard port 5432
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

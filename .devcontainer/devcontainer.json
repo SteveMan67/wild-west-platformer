@@ -1,0 +1,26 @@
+{
+  "name": "Bun & Postgres",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Install Bun using the official Dev Container Feature
+  "features": {
+    "ghcr.io/devcontainers/features/bun:1": {}
+  },
+
+  // Forward the app port (1010) and DB port (5432)
+  // 1010 matches the port in your backend/server.ts
+  "forwardPorts": [1010, 5432],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "oven.bun-vscode"
+      ]
+    }
+  },
+
+  // Automatically install dependencies after the container is created
+  "postCreateCommand": "bun install"
+}
