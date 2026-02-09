@@ -14,6 +14,8 @@ function getErrorText(response) {
   let errorDisplay
   if (status == 404) {
     errorDisplay = "No username or password provided"
+  } else if (status == 409) {
+    errorDisplay = "Username already exists"
   } else if (status == 401) {
     errorDisplay = "Invalid Username/Password"
   } else if (status == 400) {
@@ -31,18 +33,17 @@ function addError(error) {
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault()
   const form = e.target;
-  console.log(!form.username.value, !form.password.value)
+  const payload = {
+    username: form.username.value,
+    password: form.password.value
+  }
+
   if (!form.username.value) {
     addError("No username provided")
   } else if (!form.password.value) {
     addError("No password provided")
   } else {
-    const payload = {
-      username: form.username.value,
-      password: form.password.value
-    }
-  
-    const url = `${serverUrl}/api/login`
+    const url = `${serverUrl}/api/register`
     console.log(JSON.stringify(payload))
     const res = await fetch(url, {
       method: "POST",
@@ -58,4 +59,5 @@ loginForm.addEventListener("submit", async (e) => {
       getErrorText(res)
     }
   }
+
 })

@@ -1,6 +1,7 @@
 import postgres from "postgres"
 import { authenticate, type SessionCookie } from "./auth.ts"
 import { BunRequest } from "bun"
+import { Withings } from "arctic"
 
 // CORS stuf
 
@@ -48,12 +49,12 @@ const server = Bun.serve({
     };
 
     if (req.method == "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS })
+      return new Response(null, withCors({ status: 204}, CORS))
     }
 
     // --- health ---
     if (pathname == "/api/ping") {
-      return new Response("pong", { status: 200, headers: CORS})
+      return new Response("pong", withCors({ status: 200}, CORS))
     }
 
     // --- login ---
@@ -95,7 +96,7 @@ const server = Bun.serve({
 
       } catch (e) {
         console.error(e)
-        return new Response("Bad Request", { status: 400 })
+        return new Response("Bad Request", withCors({ status: 400 }, CORS))
       }
 
     }
@@ -111,7 +112,7 @@ const server = Bun.serve({
           // handle duplicate usernames 
           const duplicateUsernames = await sql`SELECT username FROM users WHERE username = ${username}`
           if (duplicateUsernames[0]) {
-            return new Response("Username Already Exists", { status: 409 })
+            return new Response("Username Already Exists", withCors({ status: 409 }, CORS))
           }
           // insert user into users
           const hashedPassword = await Bun.password.hash(password)
@@ -127,13 +128,13 @@ const server = Bun.serve({
             VALUES(${hashedCookie}, ${expiresAt}, ${userId[0].id})
             RETURNING id
           `
-          return new Response("Sucessful Register", { status: 200, headers: {
+          return new Response("Sucessful Register", withCors({ status: 200, headers: {
             "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
-          }})
+          }}, CORS))
         }
       } catch (e) {
         console.error(e)
-        return new Response("Bad Response", { status: 400 })
+        return new Response("Bad Response", withCors({ status: 400 }, CORS))
       }
     }
 
@@ -144,11 +145,11 @@ const server = Bun.serve({
       if (levelId) {
         const level = await sql`select data, name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where id = ${levelId} limit 1`
         if (!level || level.length === 0) {
-          return new Response(JSON.stringify({ error: "Level not found"}), { status: 404, headers: {"Content-Type": "application/json"}})
+          return new Response(JSON.stringify({ error: "Level not found"}), withCors({ status: 404, headers: {"Content-Type": "application/json"}}, CORS))
         }
-        return new Response(JSON.stringify(level), { headers: {"Content-Type": "application/json" } })
+        return new Response(JSON.stringify(level), withCors({ headers: {"Content-Type": "application/json" }}, CORS))
       } else {
-        return new Response(JSON.stringify({ error: "Must specify a level id with the levelId parameter" }), { status: 404, headers: {"Content-Type": "application/json"}})
+        return new Response(JSON.stringify({ error: "Must specify a level id with the levelId parameter" }), withCors({ status: 404, headers: {"Content-Type": "application/json"}}, CORS))
       }
     }
 
@@ -158,7 +159,7 @@ const server = Bun.serve({
       const page = match ? Number(match[1]) : 1
       if (page) {
         const levels = await sql`select id, name, created_at, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels limit 50 offset ${(page - 1) * 50}`
-        return new Response(JSON.stringify(levels), { headers: {"Content-Type": "application/json" } })
+        return new Response(JSON.stringify(levels), withCors({ headers: {"Content-Type": "application/json" } }, CORS))
       }
     }
 
@@ -170,7 +171,7 @@ const server = Bun.serve({
       const sessionId = cookies["session-id"]
       const token = cookies["token"]
       if (!sessionId || !token) {
-        return new Response("Unauthorized logic", { status: 401 })
+        return new Response("Unauthorized logic", withCors({ status: 401 }, CORS))
       }
       const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
       
@@ -191,9 +192,9 @@ const server = Bun.serve({
           INSERT INTO levels (name, data, owner, created_at, width, height, tags, image_url, description, level_style)
           VALUES (${name}, ${level}, ${Number(owner)}, ${createdAt}, ${width}, ${height}, ${tags}, ${imageUrl}, ${description}, ${levelStyle})
         `
-        return new Response("Level Added", { status: 200 })
+        return new Response("Level Added", withCors({ status: 200 }, CORS))
       } else {
-        return new Response("Invalid Auth", { status: 401 })
+        return new Response("Invalid Auth", withCors({ status: 401 }, CORS))
       }
     }
 
@@ -205,7 +206,7 @@ const server = Bun.serve({
       const sessionId = cookies["session-id"]
       const token = cookies["token"]
       if (!sessionId || !token) {
-        return new Response("Unauthorized logic", { status: 401 })
+        return new Response("Unauthorized logic", withCors({ status: 401 }, CORS))
       }
       const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
       if (await authenticate(sessionCookie)) {
@@ -216,21 +217,21 @@ const server = Bun.serve({
           SELECT owner FROM levels WHERE id = ${levelId}
         `
         if (!levelOwner.length) {
-          return new Response("Level does not exist", { status: 404 })
+          return new Response("Level does not exist", withCors({ status: 404 }, CORS))
         }
         if (levelOwner[0].owner != user[0].user_id) {
-          return new Response("Unauthorized", { status: 401 })
+          return new Response("Unauthorized", withCors({ status: 401 }, CORS))
         }
         const deleteLevel = await sql`
           DELETE FROM levels WHERE id = ${levelId}
         `
-        return new Response("Level Deleted Sucessfully", { status: 200 })
+        return new Response("Level Deleted Sucessfully", withCors({ status: 200 }, CORS))
       }
     }
     // ADD: modify level/level metadata
-    // ADD fetch levels per user
+    // ADD fetch levels per user  
 
-    try {
+      try {
       const url = `./frontend${pathname}`
       console.log(url, pathname)
       const file = Bun.file(url)
@@ -259,11 +260,13 @@ const server = Bun.serve({
       }
 
 
-      return new Response(file, { status: 200, headers: { "Content-Type": mime, ...CORS}})
+      return new Response(file, withCors({ status: 200, headers: { "Content-Type": mime}}, CORS))
     } catch {
+      
     }
-    return new Response("Not Found", { status: 404 })
+    return new Response("Not Found", withCors({ status: 404 }, CORS))
   }
 })
+
 
 console.log(`listening on http://localhost:${server.port}`)
