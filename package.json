@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "arctic": "^3.7.0",
+    "dev": "^0.1.3",
+    "node-dev": "^8.0.0",
     "postgres": "^3.4.8"
   },
   "devDependencies": {

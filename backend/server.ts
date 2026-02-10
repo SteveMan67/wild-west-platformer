@@ -1,14 +1,26 @@
 import postgres from "postgres"
 import { authenticate, type SessionCookie } from "./auth.ts"
-import { BunRequest } from "bun"
-import { Withings } from "arctic"
 
 // CORS stuf
 
 
 function withCors(respInit: ResponseInit, CORS: any) {
-  respInit.headers = { ...(respInit.headers||{}), ...CORS }
-  return respInit
+  const headers = new Headers()
+
+  if (respInit.headers) {
+    const h = respInit.headers as any
+    if (h instanceof Headers) {
+      for (const [k, v] of h.entries()) headers.append(k, v)
+    } else if (Array.isArray(h)) {
+      for (const [k, v] of h) headers.append(k, v)
+    } else {
+      for (const k of Object.keys(h)) headers.append(k, String(h[k]))
+    }
+  }
+  for (const [k, v] of Object.entries(CORS)) {
+    headers.set(k, v)
+  }
+  return {...respInit, headers}
 }
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:4321/postgres"
@@ -25,26 +37,35 @@ function getCookies(reqest: Request) {
 }
 
 const server = Bun.serve({
-  port: 1345,
+  port: 1010,
   routes: {
+
+    // --- login page --
     "/login": async (req) => {
       const token = req.cookies.get("token") || ""
       const sessionId = req.cookies.get("session-id") || ""
-      if (sessionId && token && await authenticate({ sessionId: sessionId, token: token})) {
-        return new Response(Bun.file("../frontend/index.html"))
+      console.log(sessionId || "not found")
+      console.log(await authenticate({ sessionId: sessionId, token: token}))
+      if (sessionId != "" && token != "" && await authenticate({ sessionId: sessionId, token: token})) {
+        console.log("user already authenticated")
+        return new Response(Bun.file("./frontend/index.html"))
       } else {
-        return new Response(Bun.file("../frontend/login.html"))
+        return new Response(Bun.file("./frontend/login.html"))
       }
     },
+    // -- editor page --
     "/editor": async () => {
-      return new Response(Bun.file("../frontend/editor.html"))
+      return new Response(Bun.file("./frontend/editor.html"))
+    },
+    "/register": async () => {
+      return new Response(Bun.file("./frontend/register.html"))
     }
   },
   async fetch(req) {
     const url = new URL(req.url)
     const pathname = url.pathname
 
-    const ALLOWED_ORIGINS = ['http://localhost:5501', 'http://localhost:5500', "http://127.0.0.1:5501"]
+    const ALLOWED_ORIGINS = ['http://localhost:5501', 'http://localhost:5500', "http://127.0.0.1:5501", "localhost:1010"]
     const origin = req.headers.get('Origin') || req.headers.get('origin');
     const corsOrigin = ALLOWED_ORIGINS.includes(origin as string) ? origin : 'null';
     const CORS = {
@@ -89,18 +110,21 @@ const server = Bun.serve({
         const uuid = crypto.randomUUID()
         const hashedCookie = await Bun.password.hash(uuid)
 
+        console.log(`token: ${uuid}`)
+        console.log(`hashed token: ${hashedCookie}`)
+        
         const sessionId = await sql`
           insert into sessions(token_hash, expires_at, user_id) 
           values (${hashedCookie}, ${Date.now() + (60 * 60 * 24 * 14)}, ${user.id})
           returning id
         `
+        const headers = new Headers()
+        headers.append("Set-Cookie", `session-id=${sessionId[0].id}; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`)
+        headers.append("Set-Cookie", `token=${uuid}; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`)
 
+        return new Response("Login successful", withCors({ status: 200, headers: headers}, CORS))
 
-        return new Response("Login successful", withCors({ status: 200, headers: {
-          "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
-        }}, CORS))
-
-      } catch (e) {
+      } catch (e) {``
         console.error(e)
         return new Response("Bad Request", withCors({ status: 400 }, CORS))
       }
@@ -134,9 +158,13 @@ const server = Bun.serve({
             VALUES(${hashedCookie}, ${expiresAt}, ${userId[0].id})
             RETURNING id
           `
-          return new Response("Sucessful Register", withCors({ status: 200, headers: {
-            "Set-Cookie": `session-id=${sessionId[0].id}, token=${uuid}; http-only; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`
-          }}, CORS))
+
+
+          const headers = new Headers()
+          headers.append("Set-Cookie", `session-id=${sessionId[0].id}; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`)
+          headers.append("Set-Cookie", `token=${uuid}; Path=/; SameSite=Lax; MaxAge=${60 * 60 * 24 * 14}`)
+
+          return new Response("Sucessful Register", withCors({ status: 200, headers: headers}, CORS))
         }
       } catch (e) {
         console.error(e)
@@ -239,7 +267,6 @@ const server = Bun.serve({
 
       try {
       const url = `./frontend${pathname}`
-      console.log(url, pathname)
       const file = Bun.file(url)
 
       const extension = String(pathname.split('.').pop()) || ""
@@ -266,7 +293,7 @@ const server = Bun.serve({
       }
 
 
-      return new Response(file, withCors({ status: 200, headers: { "Content-Type": mime}}, CORS))
+      return new Response(file, withCors({ status: 200, headers: { "Content-Type": mime }}, CORS))
     } catch {
       
     }

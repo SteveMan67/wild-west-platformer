@@ -1,5 +1,5 @@
 const loginForm = document.getElementById('login-form')
-const serverUrl = "https://platformed.jmeow.net"
+const serverUrl = "http://localhost:1010"
 
 try {
   fetch(`${serverUrl}/api/ping`, {method: "POST"}).then(res => console.log(res.body))
@@ -53,7 +53,7 @@ loginForm.addEventListener("submit", async (e) => {
     
     if (res.ok) {
       console.log("request ok")
-      window.location.href = '/frontend/editor.html'
+      window.location.href = `/editor`
     } else {
       const text = await res.text()
       getErrorText(res)
