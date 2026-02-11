@@ -24,8 +24,10 @@
     </div>
     <div class="content">
       <div class="content-wrapper">
-        <div class="game">
-          <canvas class="canvas"></canvas>
+        <div class="game-wrapper">
+          <div class="game">
+            <canvas class="canvas"></canvas>
+          </div>
         </div>
         <div class="info">
           <div class="row">
@@ -52,7 +54,10 @@
   <script type="module">
     import { init, setMode } from '/javascript/site.js'
     setMode('play')
-    init()
+    window.addEventListener('level:loaded', (e) => {
+      importMap()
+      init()
+    })
   </script>
 </body>
 

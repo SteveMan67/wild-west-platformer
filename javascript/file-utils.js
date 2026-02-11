@@ -11,50 +11,54 @@ export function importMap(e) {
   reader.onerror = () => console.error('failed to read file', reader.error);
   reader.onload = () => {
     const json = JSON.parse(reader.result);
-    player.jumpHeight = json.jumpHeight;
-    player.jumpWidth = json.jumpWidth;
-    player.yInertia = json.yInertia;
-    player.xInertia = json.xInertia;
-    if (json.bouncePadHeight) {
-      player.bouncePadHeight = json.bouncePadHeight;
-    }
-    if (json.zoom) {
-      player.tileSize = json.zoom;
-    }
-    if (json.tilesetPath) {
-      updateTileset(json.tilesetPath);
-    }
-    player.wallJump = json.wallJump;
-    const tileLayer = json.layers.find(l => l.type === "tilelayer");
-    const rotationLayer = json.layers.find(l => l.type === "rotation");
-    const rawRotationLayer = decodeRLE(rotationLayer.data);
-    let rawTileLayer = decodeRLE(tileLayer.data);
-    if (rawTileLayer.length !== json.width * json.height) {
-      console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height);
-    }
-    rawTileLayer = rawTileLayer.map(id => id << 4);
-    rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height);
-    console.log(rawTileLayer);
-    for (let i = 0; i < rawTileLayer.length; i++) {
-      if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
-        rawTileLayer[i] += rawRotationLayer[i];
-      }
-      if (editor.tileset[rawTileLayer[i] >> 4].mechanics && editor.tileset[rawTileLayer[i] >> 4].mechanics.includes("spawn")) {
-        editor.playerSpawn.y = Math.floor(i / json.width);
-        editor.playerSpawn.x = i % json.width;
-      }
-    }
-    editor.width = json.width;
-    editor.height = json.height;
-    const tiles = new Uint16Array(rawTileLayer);
-    const map = {
-      tiles,
-      w: json.width,
-      h: json.height
-    };
-    editor.map = map;
+    loadMapFromData(json)
   };
   reader.readAsText(file);
+}
+
+export function loadMapFromData(json) {
+  player.jumpHeight = json.jumpHeight;
+  player.jumpWidth = json.jumpWidth;
+  player.yInertia = json.yInertia;
+  player.xInertia = json.xInertia;
+  if (json.bouncePadHeight) {
+    player.bouncePadHeight = json.bouncePadHeight;
+  }
+  if (json.zoom) {
+    player.tileSize = json.zoom;
+  }
+  if (json.tilesetPath) {
+    updateTileset(json.tilesetPath);
+  }
+  player.wallJump = json.wallJump;
+  const tileLayer = json.layers.find(l => l.type === "tilelayer");
+  const rotationLayer = json.layers.find(l => l.type === "rotation");
+  const rawRotationLayer = decodeRLE(rotationLayer.data);
+  let rawTileLayer = decodeRLE(tileLayer.data);
+  if (rawTileLayer.length !== json.width * json.height) {
+    console.warn('readData: data length not expected value', rawTileLayer.length, json.width * json.height);
+  }
+  rawTileLayer = rawTileLayer.map(id => id << 4);
+  rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height);
+  console.log(rawTileLayer);
+  for (let i = 0; i < rawTileLayer.length; i++) {
+    if (editor.tileset[rawTileLayer[i] >> 4].type == "rotation") {
+      rawTileLayer[i] += rawRotationLayer[i];
+    }
+    if (editor.tileset[rawTileLayer[i] >> 4].mechanics && editor.tileset[rawTileLayer[i] >> 4].mechanics.includes("spawn")) {
+      editor.playerSpawn.y = Math.floor(i / json.width);
+      editor.playerSpawn.x = i % json.width;
+    }
+  }
+  editor.width = json.width;
+  editor.height = json.height;
+  const tiles = new Uint16Array(rawTileLayer);
+  const map = {
+    tiles,
+    w: json.width,
+    h: json.height
+  };
+  editor.map = map;
 }
 
 export function decodeRLE(rle) {

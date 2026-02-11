@@ -129,3 +129,11 @@ export function drawEnemies(dt) {
   })
 }
 
+export function updateCanvasSize() {
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = rect.width
+  canvas.height = rect.height
+  ctx.imageSmoothingEnabled = false
+  canvas.style.imageRendering = 'pixelated'
+}
+

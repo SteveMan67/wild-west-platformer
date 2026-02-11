@@ -1,4 +1,5 @@
-import { toggleEditorUI, updateCanvasSize, sortByCategory } from "./ui.js"
+import { toggleEditorUI, sortByCategory } from "./ui.js"
+import { updateCanvasSize } from "./renderer.js"
 import { canvas, ctx, drawEnemies, drawMap, drawPlayer, getCameraCoords } from "./renderer.js"
 import { endLevel, key, playSound } from "./site.js"
 import { state } from "./state.js"
