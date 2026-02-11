@@ -37,7 +37,7 @@ function getCookies(reqest: Request) {
 }
 
 const server = Bun.serve({
-  port: 1010,
+  port: 9021,
   routes: {
 
     // --- login page --
@@ -287,7 +287,44 @@ const server = Bun.serve({
       }
     }
 
-    // ADD: modify level/level metadata
+    // --- Edit a Level
+    if (pathname == "/api/edit" && req.method == "PATCH") {
+      const raw = await req.json()
+      const levelId = raw.levelId
+
+      const allowedTags = new Set([
+        "name", "data", "width", "height", "tags", "image_url", "description", "level_style"
+      ])
+
+      let sqlInsert = ''
+      for (const [k, v] of Object.entries(raw)) {
+        if (!allowedTags.has(k)) continue
+        sqlInsert += `${k} = ${v}`
+        if (sqlInsert != '') {
+          sqlInsert += ', '
+        }
+      }
+
+
+      const cookies = getCookies(req)
+      const sessionId = cookies["session-id"]
+      const token = cookies["token"]
+      if (!sessionId || !token) {
+        return new Response("Unable to Authenticate", withCors({ status: 401 }, CORS))
+      }
+      const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
+      const user = await authenticate(sessionCookie)
+      if (typeof user == 'number') {
+        const update = await sql`
+          UPDATE levels
+          SET ${sqlInsert}
+          WHERE id = ${levelId} AND user_id = ${user}
+          LIMIT 1
+        `
+      } else {
+        return new Response("Incorrect Authorization", withCors({ status: 200, headers: { "Content-Type": "application/json" } }, CORS))
+      }
+    }
     // ADD fetch levels per user  
 
     try {

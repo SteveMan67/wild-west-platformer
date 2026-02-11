@@ -2,7 +2,7 @@ import { createMap } from "./file-utils.js"
 import { importMap } from "./file-utils.js"
 import { mode, setMode, input } from "./site.js"
 import { state } from "./state.js"
-import { ctx, canvas, updateTileset } from "./renderer.js"
+import { canvas, updateCanvasSize, updateTileset } from "./renderer.js"
 import { toggleErase, changeSelectedTile, zoomMap, scrollCategoryTiles } from "./editor.js"
 import { uploadLevel } from "./api.js"
 const { editor, player } = state
@@ -28,14 +28,6 @@ export function updateSlidersOnLoad(json) {
   if (json.zoom) {
     zoomSlider.value = (json.zoom / (32 / 6))
   }
-}
-
-export function updateCanvasSize() {
-  const rect = canvas.getBoundingClientRect()
-  canvas.width = rect.width
-  canvas.height = rect.height
-  ctx.imageSmoothingEnabled = false
-  canvas.style.imageRendering = 'pixelated'
 }
 
 export function sortByCategory(category) {

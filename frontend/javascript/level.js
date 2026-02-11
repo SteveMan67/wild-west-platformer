@@ -2,6 +2,7 @@ const serverUrl = "http://localhost:1010"
 async function getLevel(level = 1) {
   try {
     const levels = await fetch(`${serverUrl}/api/level?levelId=${level}`)
+    window.dispatchEvent(new CustomEvent('level:loaded', { detail: data }))
     return levels.json()
   } catch (e) {
     console.error(e)

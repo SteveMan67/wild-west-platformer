@@ -17,6 +17,9 @@ export async function authenticate(session_cookie: SessionCookie) {
   }
   console.log(`token hash: ${sessions[0].token_hash}`)
   const ok = await Bun.password.verify(session_cookie.token, sessions[0].token_hash)
-  console.log(ok)
-  return ok
+  if (ok) {
+    return sessions[0].user_id
+  } else {
+    return false
+  }
 }
