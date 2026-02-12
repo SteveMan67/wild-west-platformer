@@ -33,6 +33,9 @@ export async function loadMapFromData(json) {
   } else {
     await updateTileset(json.tilesetPath)
   }
+  if (json.spawn) {
+    editor.playerSpawn = { x: json.spawn.x, y: json.spawn.y }
+  }
   player.wallJump = json.wallJump;
   const tileLayer = json.layers.find(l => l.type === "tilelayer");
   const rotationLayer = json.layers.find(l => l.type === "rotation");
@@ -151,6 +154,7 @@ export function createMap(width, height, data) {
   json.zoom = player.tileSize
   json.tilesetPath = editor.tilesetPath
   json.layers = []
+  json.spawn = { x: editor.playerSpawn.x, y: editor.playerSpawn.y }
   const tileIdRLE = encodeRLE(data.map(id => id >> 4))
   let mapLayer = {
     "type": "tilelayer",

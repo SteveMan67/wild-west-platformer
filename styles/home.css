@@ -36,6 +36,8 @@
 
 .content {
     grid-area: main;
+    overflow-y: scroll;
+    scrollbar-width: none;
 }
 
 .filters {
