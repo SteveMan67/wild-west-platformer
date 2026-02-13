@@ -1,4 +1,4 @@
-const serverUrl = window.location.hostname
+const serverUrl = window.location.host
 async function getLevel(page = 1) {
   try {
     const levels = await fetch(`${serverUrl}/api/myLevels`)

@@ -1,4 +1,4 @@
-const serverURL = window.location.hostname
+const serverURL = window.location.host
 
 export async function uploadLevel(dataList) {
   const payload = {}
