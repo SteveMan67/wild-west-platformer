@@ -38,6 +38,9 @@
     grid-area: main;
     overflow-y: scroll;
     scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center
 }
 
 .filters {
@@ -159,4 +162,8 @@
 .plays-finishes {
     margin: 0;
     font-size: 20px;
+}
+
+.page-title {
+    font-weight: 500;
 }
