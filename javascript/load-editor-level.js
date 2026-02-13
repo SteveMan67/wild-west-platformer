@@ -28,7 +28,7 @@ getLevel(levelNum).then(level => {
   if (level && levelNum && level.error == null) {
     const levelData = level.data
     loadMapFromData(levelData)
-  } else {
+  } else if (level && level.error) {
     console.log(level.error)
   }
   init()

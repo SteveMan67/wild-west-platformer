@@ -74,7 +74,8 @@ nav h1 {
   font-size: 20px;
   height: 33px;
   border: none;
-  -webkit-text-fill-color: black; /* styles the placeholder */
+  -webkit-text-fill-color: #c29a62;
+  /* styles the placeholder */
   font-size: 20px;
 }
 
