@@ -108,7 +108,7 @@ export function levelEditorLoop(dt) {
         } else if (!tileLimitPlaced) {
           calcAdjacentAdjacency(idx, editor.selectedTile)
         }
-
+        editor.dirty = true
       }
     }
     if (lastIdx !== idx) {
@@ -131,6 +131,7 @@ export function levelEditorLoop(dt) {
           const newRotation = (editor.currentRotation + 1) % 4
           editor.currentRotation = newRotation
         }
+        editor.dirty = true
       }
       rDown = true
     }
@@ -210,6 +211,7 @@ export function updateLevelSize(width, height) {
   editor.height = height
   editor.map.w = width
   editor.map.h = height
+  editor.dirty = true
 }
 
 

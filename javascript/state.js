@@ -44,6 +44,7 @@ export const state = {
       x: 0,
       y: 0
     },
+    dirty: false,
     currentRotation: 0,
     playerSpawn: {x: 0, y: 0},
     tileSize: 32,

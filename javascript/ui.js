@@ -53,6 +53,21 @@ export function sortByCategory(category) {
 }
 
 export function addEventListeners() {
+
+  window.addEventListener("beforeunload", (e) => {
+    if (editor.dirty) {
+      e.preventDefault()
+      e.returnValue = ""
+    }
+  })
+
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a[href]")
+    if (!a) return
+    if (state.editor.dirty && !confirm("Leave site? Changes you made might not be saved.")) {
+      e.preventDefault()
+    }
+  })
   // level share stuff
   const levelName = document.getElementById("level-name")
   const visibility = document.getElementById("visibility")
