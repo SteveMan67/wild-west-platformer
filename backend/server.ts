@@ -60,9 +60,6 @@ const server = Bun.serve({
     "/register": async () => {
       return new Response(Bun.file("./frontend/register.html"))
     },
-    "/": async () => {
-      return new Response(Bun.file("./frontend/index.html"))
-    },
     "/myLevels": async (req) => {
       const token = req.cookies.get("token") || ""
       const sessionId = req.cookies.get("session-id") || ""
@@ -74,7 +71,10 @@ const server = Bun.serve({
       } else {
         return new Response(Bun.file("./frontend/login.html"))
       }
-    }
+    },
+    "/": async () => {
+      return new Response(Bun.file("./frontend/index.html"))
+    },
   },
   async fetch(req) {
     const url = new URL(req.url)
@@ -356,7 +356,7 @@ const server = Bun.serve({
           SELECT user_id FROM sessions WHERE id = ${sessionId}
         `
 
-        const level = await sql`select name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authorized} limit 1`
+        const level = await sql`select id, name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authorized} limit 1`
         if (!level[0] || level.length === 0) {
           return new Response(JSON.stringify({ error: "Level not found" }), withCors({ status: 404, headers: { "Content-Type": "application/json" } }, CORS))
         }

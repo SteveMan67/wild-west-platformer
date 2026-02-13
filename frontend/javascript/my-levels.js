@@ -11,8 +11,10 @@ async function getLevel(page = 1) {
 
 const levelsElement = document.querySelector(".levels")
 getLevel(1).then(levels => {
+  levels = new Array(...levels)
   levelsElement.innerHTML = ''
   levels.forEach(level => {
+    console.log(level)
     const levelElement = document.createElement("a")
     levelElement.href = `/level/${level.id}`
     let tagsHtml = ''
