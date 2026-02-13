@@ -1,7 +1,7 @@
 import { loadMapFromData } from './file-utils.js'
 import { init } from '/javascript/site.js'
 
-const serverUrl = `${window.location.origin}`
+const serverUrl = window.location.origin
 
 // fetch the level if there is a level in the 
 
