@@ -62,6 +62,18 @@ const server = Bun.serve({
     },
     "/": async () => {
       return new Response(Bun.file("./frontend/index.html"))
+    },
+    "/myLevels": async (req) => {
+      const token = req.cookies.get("token") || ""
+      const sessionId = req.cookies.get("session-id") || ""
+      console.log(sessionId || "not found")
+      console.log(await authenticate({ sessionId: sessionId, token: token }))
+      if (sessionId != "" && token != "" && await authenticate({ sessionId: sessionId, token: token })) {
+        console.log("user already authenticated")
+        return new Response(Bun.file("./frontend/user.html"))
+      } else {
+        return new Response(Bun.file("./frontend/login.html"))
+      }
     }
   },
   async fetch(req) {
@@ -326,6 +338,33 @@ const server = Bun.serve({
       }
     }
     // ADD fetch levels per user  
+
+    if (pathname == "/api/myLevels" && req.method == "GET") {
+      const cookies = getCookies(req)
+      const sessionId = cookies["session-id"]
+      const token = cookies["token"]
+      if (!sessionId || !token) {
+        console.log(cookies)
+        console.log(`sessionId = ${sessionId} & token = ${token}`)
+        return new Response("Unauthorized logic", withCors({ status: 401 }, CORS))
+      }
+      const sessionCookie: SessionCookie = { sessionId: sessionId, token: token }
+      const authorized = await authenticate(sessionCookie)
+      console.log(authorized, sessionCookie)
+      if (authorized) {
+        const rows = await sql`
+          SELECT user_id FROM sessions WHERE id = ${sessionId}
+        `
+
+        const level = await sql`select name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authorized} limit 1`
+        if (!level[0] || level.length === 0) {
+          return new Response(JSON.stringify({ error: "Level not found" }), withCors({ status: 404, headers: { "Content-Type": "application/json" } }, CORS))
+        }
+        return new Response(JSON.stringify(level[0]), withCors({ headers: { "Content-Type": "application/json" } }, CORS))
+      } else {
+        return new Response(JSON.stringify({ error: "Must specify a level id with the user parameter" }), withCors({ status: 404, headers: { "Content-Type": "application/json" } }, CORS))
+      }
+    }
 
     try {
       const url = `./frontend${pathname}`
