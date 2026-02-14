@@ -327,11 +327,18 @@ const server = Bun.serve({
     if (pathname == "/api/play") {
       const raw = await req.json()
       const levelId = raw.levelId
+      console.log(levelId)
 
       if (raw.finished) {
         const incrementCounter = await sql`
-          UPDATE levels SET finished_plays = finished_plays + 1 where id = ${levelId} LIMIT 1
+          UPDATE levels SET finished_plays = finished_plays + 1 where id = ${levelId}
         `
+        return new Response("Updated Finished Play Counter", { status: 200 })
+      } else {
+        const incrementCounter = await sql`
+          UPDATE levels SET total_plays = total_plays + 1 where id = ${levelId}
+        `
+        return new Response("Updated Play Counter", { status: 200 })
       }
     }
 
