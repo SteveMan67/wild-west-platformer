@@ -337,6 +337,7 @@ const server = Bun.serve({
 
     if (pathname == "/api/myLevels" && req.method == "GET") {
       const authentication = await authenticate(req)
+      console.log(authentication)
       if (authentication?.signedIn) {
         const level = await sql`select id, name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authentication.user} limit 1`
         if (!level[0] || level.length === 0) {
