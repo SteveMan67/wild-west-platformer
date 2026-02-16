@@ -1,7 +1,7 @@
 const serverUrl = window.location.origin
 async function getLevel(user = 1) {
   try {
-    const levels = await fetch(`${serverUrl}/api/browse`)
+    const levels = await fetch(`${serverUrl}/api/myLevels`)
     return levels.json()
   } catch (e) {
     console.error(e)
