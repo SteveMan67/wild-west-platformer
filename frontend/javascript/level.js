@@ -1,4 +1,5 @@
 import { play } from "/javascript/api.js"
+import { updateCanvasSize } from "/javascript/renderer.js"
 
 const serverUrl = window.location.origin
 async function getLevel(level = 1) {
@@ -33,4 +34,8 @@ getLevel(levelNum).then(level => {
     finishes.innerHTML = level.finished_plays
     play(levelNum, false)
   }
+})
+
+window.addEventListener("resize", () => {
+  updateCanvasSize()
 })

@@ -48,7 +48,7 @@ export async function loadMapFromData(json) {
   // need to set width and height before calculateAdjacencies otherwise it don't work
   editor.width = json.width;
   editor.height = json.height;
-  
+
   rawTileLayer = calculateAdjacencies(rawTileLayer, json.width, json.height);
 
   for (let i = 0; i < rawTileLayer.length; i++) {
@@ -299,19 +299,21 @@ export async function updateMap() {
     const payload = {}
     payload.levelId = levelNum
     payload.data = createMap()
-  
+
     fetch(`${serverUrl}/api/edit`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(payload),
     }).then(res => {
       console.log(res)
     })
   } else {
-    uploadLevel([
+    const levelId = await uploadLevel([
       ["data", createMap()]
     ])
+    console.log(await levelId)
+    window.location.href = `/level/${await levelId}`
   }
 }
 

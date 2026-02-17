@@ -1,7 +1,6 @@
 import { toggleEditorUI, sortByCategory } from "./ui.js"
-import { updateCanvasSize } from "./renderer.js"
 import { canvas, ctx, drawEnemies, drawMap, drawPlayer, getCameraCoords } from "./renderer.js"
-import { endLevel, key, playSound } from "./site.js"
+import { endLevel, key, playSound, input } from "./site.js"
 import { state } from "./state.js"
 import { createMap } from "./file-utils.js"
 const { player, editor } = state
@@ -35,7 +34,7 @@ function getMechanics(idx) {
     return outList
   } else {
     return outList
-  } 
+  }
 }
 
 export function calculateAdjacencies(tiles, w, h) {
@@ -70,7 +69,7 @@ export function calculateAdjacency(tileIdx, tileId, tiles = editor.map.tiles) {
     const val = tiles[idx]
     return val ? val >> 4 : 0
   }
-  
+
   const check = (idx) => {
     const nid = getNeighborId(idx)
     if (nid === 0) return false
@@ -116,7 +115,7 @@ export function calcAdjacentAdjacency(centerTileIdx) {
   if ((centerTileIdx % w) < w - 1 && centerTileIdx + 1 < tiles.length) neighbors.push(centerTileIdx + 1)
   if ((centerTileIdx % w) > 0 && centerTileIdx - 1 >= 0) neighbors.push(centerTileIdx - 1)
   if (centerTileIdx + w < tiles.length) neighbors.push(centerTileIdx + w)
-  
+
   neighbors.forEach(n => {
     const tileId = tiles[n] >> 4
     if (tileId !== 0 && editor.tileset[tileId].type == 'adjacency') {
@@ -142,7 +141,7 @@ function getJumpSpeed(jumpLengthInTiles, jumpForce, yInertia, tilesize) {
   while (y <= 0) {
     y += vy
     vy += gravity
-    frames++ 
+    frames++
   }
 
   const distance = jumpLengthInTiles * player.tileSize
@@ -198,7 +197,7 @@ function killPlayer() {
   player.vx = 0
   player.died = true
   player.dieCameraTimer = player.dieCameraTime
-  player.dieCameraStart = { x: player.cam.x, y: player.cam.y}
+  player.dieCameraStart = { x: player.cam.x, y: player.cam.y }
   if (player.lastCheckpointSpawn.y !== 0 && player.lastCheckpointSpawn.x !== 0) {
     player.x = player.lastCheckpointSpawn.x * player.tileSize
     player.y = player.lastCheckpointSpawn.y * player.tileSize
@@ -207,6 +206,7 @@ function killPlayer() {
     player.y = editor.playerSpawn.y * player.tileSize
   }
 
+  input.keys[" "] = false
   playSound("/assets/audio/death.wav")
   playSound("/assets/audio/deathmusic.wav")
 }
@@ -259,21 +259,21 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
     for (let x = intersectionLeft; x < intersectionRight; x += 2) {
       const u = (x - tileWorldX) / player.tileSize;
       const v = (y - tileWorldY) / player.tileSize;
-      
+
       const localX = Math.floor(u * mask.w);
       const localY = Math.floor(v * mask.h);
-      
+
       if (localX < 0 || localX >= mask.w || localY < 0 || localY >= mask.h) continue;
 
       const index = (localY * mask.w + localX) * 4 + 3;
-      
-      if (mask.data[index] > 10) { 
+
+      if (mask.data[index] > 10) {
         return true;
       }
     }
   }
   return false
-} 
+}
 
 function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
   const mechanics = editor.tileset[tileId].mechanics
@@ -292,7 +292,7 @@ function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
       const bounceTile = editor.map.tiles[idx]
       if ((bounceTile & 15) == 0) {
         player.vy = -getJumpHeight(player.bouncePadHeight, player.yInertia, player.tileSize)
-      } else if ((bounceTile & 15) == 1){
+      } else if ((bounceTile & 15) == 1) {
         player.vx = -getJumpHeight(player.bouncePadHeight, player.xInertia, player.tileSize)
       } else if ((bounceTile & 15) == 2) {
         player.vy = getJumpHeight(player.bouncePadHeight, player.yInertia, player.tileSize)
@@ -301,7 +301,7 @@ function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
       }
     }
   }
-    if (mechanics.includes("checkpoint")) {
+  if (mechanics.includes("checkpoint")) {
     if (player.lastCheckpointSpawn.x != tx && player.lastCheckpointSpawn.ty != ty) {
       playSound("/assets/audio/checkpoint.wav")
     }
@@ -352,7 +352,7 @@ function checkCollision(dt, x, y, w, h, simulate = false) {
       const oldY = player.y
 
       if (!player.collectedCoinList.includes(idx) && !simulate) mechanics(dt, idx, tileId, px, py, x, y, w, h)
-      
+
       if (player.x !== oldX || player.y !== oldY) return false
       if (tileId !== 0) {
         const tile = editor.tileset[tileId]
@@ -369,7 +369,7 @@ function checkCollision(dt, x, y, w, h, simulate = false) {
           continue
         }
         if (tile && tile.mechanics && tile.mechanics.includes("pixelCollision")) {
-          return checkPixelCollsion(editor.map.tiles[idx], px,py, x, y, w, h)
+          return checkPixelCollsion(editor.map.tiles[idx], px, py, x, y, w, h)
         }
         if (tile && tile.mechanics && tile.mechanics.includes("dissipate")) {
           const dissipation = player.dissipations.find(d => d.tileIdx === idx)
@@ -412,8 +412,8 @@ function updatePhysics(dt) {
       isJumping = true;
     }
   } else {
-      lastJumpInput = false;
-      isJumping = false;
+    lastJumpInput = false;
+    isJumping = false;
   }
 
   if (player.controlTimer > 0) {
@@ -423,11 +423,11 @@ function updatePhysics(dt) {
   }
 
   player.vy += ((0.7 * player.yInertia) + 0.5) * dt
-  
+
   if (player.vy > player.tileSize * 0.9) {
     player.vy = player.tileSize * 0.9
   }
-  
+
   if (player.jumpBufferTimer > 0 && player.coyoteTimer > 0) {
     player.vy = -player.jump
     player.jumpBufferTimer = 0
@@ -438,8 +438,8 @@ function updatePhysics(dt) {
   }
   const jumpControl = player.decreaseAirControl && !player.grounded ? 1 : 1
   const currentControl = jumpControl * player.controlMultiplier
-    let activeInput = false
-    if ((key("left") && !key("right")) || (key("left") && !player.grounded)) {
+  let activeInput = false
+  if ((key("left") && !key("right")) || (key("left") && !player.grounded)) {
     activeInput = true
     if (player.vx > -player.speed) {
       player.vx -= player.xInertia * 1 * currentControl * dt
@@ -447,7 +447,7 @@ function updatePhysics(dt) {
       player.vx = -player.speed
     }
   }
-    if (key("right") && !key("left") || (key("right") && !player.grounded)) {
+  if (key("right") && !key("left") || (key("right") && !player.grounded)) {
     activeInput = true
     if (player.vx < player.speed) {
       player.vx += player.xInertia * 1 * currentControl * dt
@@ -466,7 +466,7 @@ function updatePhysics(dt) {
     }
     if (Math.abs(player.vx) < player.stopThreshold) {
       player.vx = 0
-  }
+    }
   }
 
   const offX = (player.w - player.hitboxW) / 2
@@ -491,7 +491,7 @@ function updatePhysics(dt) {
     if (player.vy > 0) {
       const hitBottom = player.y + offY + player.hitboxH
       const tileTop = Math.floor(hitBottom / player.tileSize) * player.tileSize
-      player.y = tileTop - player.hitboxH - offY 
+      player.y = tileTop - player.hitboxH - offY
       player.grounded = true
       player.coyoteTimer = player.coyoteTime
     } else if (player.vy < 0) {
@@ -506,7 +506,7 @@ function updatePhysics(dt) {
     killPlayer()
   }
 
-  const touchingLeft = checkCollision(dt,player.x + offX - 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
+  const touchingLeft = checkCollision(dt, player.x + offX - 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
   const touchingRight = checkCollision(dt, player.x + offX + 2, player.y + offY + 2, player.hitboxW, player.hitboxH - 4, true)
 
   // coyote timer
@@ -523,7 +523,7 @@ function updatePhysics(dt) {
   if (player.grounded) limitControl(0, 1)
 
   // walljump
-  if (!player.grounded && player.wallJump !== "none" && key("any") && player.jumpBufferTimer !== 0 &&  !player.wallCoyoteTimer == 0) {
+  if (!player.grounded && player.wallJump !== "none" && key("any") && player.jumpBufferTimer !== 0 && !player.wallCoyoteTimer == 0) {
     if (player.wallJump == "off") {
       if (player.lastWallSide == 1 && key("up")) {
         player.vx = -player.speed
@@ -556,7 +556,7 @@ function aabbIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
 
 function handleEnemyCollision(enemy, dt) {
   const offX = (player.w - player.hitboxW) / 2
-  const offY = (player.h - player.hitboxH) 
+  const offY = (player.h - player.hitboxH)
   const px = player.x + offX
   const py = player.y + offY
   const pw = player.hitboxW
@@ -567,7 +567,7 @@ function handleEnemyCollision(enemy, dt) {
   const ew = player.tileSize
   const eh = player.tileSize
 
-  if (!aabbIntersect(px,py,pw,ph,ex,ey,ew,eh)) return false
+  if (!aabbIntersect(px, py, pw, ph, ex, ey, ew, eh)) return false
 
   if (py < ey) {
     // player stomped on enemy
@@ -597,7 +597,7 @@ function updateEnemyPhysics(dt) {
         enemy.direction *= -1
       }
       enemy.vx = 0
-    } 
+    }
 
     enemy.y += enemy.vy * dt
     enemy.grounded = false
@@ -670,7 +670,7 @@ export function platformerLoop(dt) {
     player.cam.x = (editor.map.w * player.tileSize) - canvas.width
   }
 
- 
+
   ctx.fillStyle = '#C29A62'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
