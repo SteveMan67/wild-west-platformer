@@ -234,6 +234,23 @@ const server = Bun.serve({
       }
     }
 
+    if (pathname == "/api/search") {
+      const page: number = Number(url.searchParams.get("page")) || 1
+      const search: string = url.searchParams.get("search") || ""
+      if (search) {
+        const levels = await sql`
+        select id, name, created_at, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels
+        WHERE public = true AND name LIKE '%${search}%'
+        limit 50 offset ${(page - 1) * 50}
+        `
+        return new Response(JSON.stringify(levels), {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
+      }
+    }
+
     // --- upload level --- 
     if (pathname == "/api/upload" && req.method == "POST") {
       const raw = await req.json()
