@@ -242,18 +242,20 @@ const server = Bun.serve({
       if (authentication?.signedIn) {
         const name = raw.name ? raw.name : "My New Level"
         const createdAt = Date.now()
-        const width = raw.data.width ? raw.data.width : 100
-        const height = raw.data.height ? raw.data.height : 50
+        const width = raw.data && raw.data.width ? raw.data.width : 100
+        const height = raw.data && raw.data.height ? raw.data.height : 50
         const owner = authentication.user
         const tags = raw.tags ? raw.tags : []
         const imageUrl = raw.image_url ? raw.image_url : ""
         const description = raw.description ? raw.description : ""
         const levelStyle = raw.level_style ? raw.level_style : ""
+        // console.log(name, level, owner, createdAt, width, height, tags, imageUrl, description, levelStyle)
         const insertInto = await sql`
           INSERT INTO levels (name, data, owner, created_at, width, height, tags, image_url, description, level_style)
           VALUES (${name}, ${level}, ${Number(owner)}, ${createdAt}, ${width}, ${height}, ${tags}, ${imageUrl}, ${description}, ${levelStyle})
+          returning id
         `
-        return new Response("Level Added", withCors({ status: 200 }, CORS))
+        return new Response(JSON.stringify({ levelId: insertInto[0].id }), withCors({ status: 200 }, CORS))
       } else {
         return new Response("Invalid Auth", withCors({ status: 401 }, CORS))
       }
@@ -339,7 +341,7 @@ const server = Bun.serve({
       const authentication = await authenticate(req)
       console.log(authentication)
       if (authentication?.signedIn) {
-        const level = await sql`select id, name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authentication.user} limit 1`
+        const level = await sql`select id, name, width, height, owner, tags, image_url, approvals, disapprovals, approval_percentage, total_plays, finished_plays, description, level_style from levels where owner = ${authentication.user}`
         if (!level[0] || level.length === 0) {
           return new Response(JSON.stringify({ error: "Level not found" }), withCors({ status: 404, headers: { "Content-Type": "application/json" } }, CORS))
         }
