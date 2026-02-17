@@ -35,6 +35,7 @@ function deleteLevel(levelId = deletedLevelNumber) {
 const levelsElement = document.querySelector(".levels")
 getLevel(1).then(levels => {
   levelsElement.innerHTML = ''
+  levels = [].concat(levels)
   levels.forEach(level => {
     const levelElement = document.createElement("a")
     levelElement.href = `/editor/${level.id}`
