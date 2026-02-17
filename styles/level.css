@@ -4,12 +4,15 @@
   align-items: center;
   width: 100%;
   height: 100%;
-  position: absolute
+  position: absolute;
+  overflow-y: scroll;
+
 }
 
 .game-wrapper {
   width: min(90vw, 1200px);
   aspect-ratio: 5 / 3;
+  max-height: calc(80vh - 80px);
   border: 4px solid black;
   border-radius: 20px;
   position: relative;
