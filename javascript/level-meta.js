@@ -51,7 +51,7 @@ async function getMe() {
   return user
 }
 
-async function udpateLevelMeta() {
+async function uploadLevel() {
   const payload = {
     name: levelName.value,
     public: visibilityElement.value == "public" ? true : false,
@@ -67,7 +67,7 @@ async function udpateLevelMeta() {
 }
 
 updateButton.addEventListener("click", () => {
-  udpateLevelMeta().then(level => {
+  uploadLevel().then(level => {
     window.location.href = `/level/${levelNum}`
   })
 })
