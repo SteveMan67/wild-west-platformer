@@ -255,6 +255,7 @@ const server = Bun.serve({
           VALUES (${name}, ${level}, ${Number(owner)}, ${createdAt}, ${width}, ${height}, ${tags}, ${imageUrl}, ${description}, ${levelStyle})
           returning id
         `
+        console.log({ levelId: insertInto[0].id })
         return new Response(JSON.stringify({ levelId: insertInto[0].id }), withCors({ status: 200 }, CORS))
       } else {
         return new Response("Invalid Auth", withCors({ status: 401 }, CORS))
