@@ -13,6 +13,21 @@ async function getLevel(level = 1) {
   }
 }
 
+function addEditButton(owned, levelId) {
+  const b = document.createElement('a')
+  b.href = `/editor/${levelId}`
+  b.classList.add("edit")
+  const text = owned ? "Edit" : "Remix"
+  b.innerHTML = `
+    <p>${text}</p>
+    <img src="/assets/icons/edit-light.svg">
+  `
+  const insertPlace = document.querySelector(".approval-wrapper")
+  console.log(insertPlace)
+  insertPlace.appendChild(b)
+  console.log(b)
+}
+
 const levelName = document.querySelector(".name")
 const approvalPercentage = document.querySelector(".approval-percentage")
 const description = document.querySelector(".description")
@@ -32,6 +47,7 @@ getLevel(levelNum).then(level => {
     description.innerHTML = level.description
     plays.innerHTML = level.total_plays
     finishes.innerHTML = level.finished_plays
+    addEditButton(level.owned || false, level.id)
     play(levelNum, false)
   }
 })

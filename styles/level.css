@@ -6,7 +6,7 @@
   height: 100%;
   position: absolute;
   overflow-y: scroll;
-
+  scrollbar-width: none;
 }
 
 .game-wrapper {
@@ -33,6 +33,7 @@ canvas {
 
 .approval-percentage {
   font-size: 25px;
+  margin: 0;
 }
 
 .name {
@@ -41,8 +42,11 @@ canvas {
 
 .info p,
 .info h2 {
-  margin-top: 10px;
   margin-bottom: 0;
+}
+
+.info {
+  margin-top: 10px;
 }
 
 .row {
@@ -62,4 +66,36 @@ canvas {
   font-size: 25px;
   margin: 0;
   margin-left: 10px;
+}
+
+.approval-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0;
+}
+
+.edit {
+  font-size: 25px;
+  background-color: black;
+  outline: none;
+  border: none;
+  color: #c29a62;
+  font-family: "Fredoka", sans-serif;
+  border-radius: 10px;
+  margin-left: 20px;
+  padding: 5px 15px;
+  display: flex;
+  flex-direction: row;
+  text-decoration: none;
+}
+
+.edit img {
+  width: 26px;
+  aspect-ratio: 1;
+  margin-left: 10px;
+}
+
+.edit p {
+  margin: 0;
 }
