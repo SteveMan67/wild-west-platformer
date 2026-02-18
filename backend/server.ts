@@ -437,11 +437,15 @@ const server = Bun.serve({
           mime = "application/json; charset=utf-8"
           break
       }
+      const fileExists = await file.exists()
+      console.log(fileExists)
+      if (!fileExists) {
+        return new Response("Not Found", withCors({ status: 404 }, CORS))
+      }
       return new Response(file, withCors({ status: 200, headers: { "Content-Type": mime } }, CORS))
     } catch {
       return new Response("Not Found", withCors({ status: 404 }, CORS))
     }
-    return new Response("Not Found", withCors({ status: 404 }, CORS))
   }
 })
 
