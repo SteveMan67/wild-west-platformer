@@ -357,7 +357,6 @@ const server = Bun.serve({
         return new Response("Incorrect Authorization", withCors({ status: 200, headers: { "Content-Type": "application/json" } }, CORS))
       }
     }
-    // ADD fetch levels per user  
 
     if (pathname == "/api/myLevels" && req.method == "GET") {
       const authentication = await authenticate(req)
@@ -370,6 +369,45 @@ const server = Bun.serve({
         return new Response(JSON.stringify(level), withCors({ headers: { "Content-Type": "application/json" } }, CORS))
       } else {
         return new Response(JSON.stringify({ error: "Must specify a level id with the user parameter" }), withCors({ status: 404, headers: { "Content-Type": "application/json" } }, CORS))
+      }
+    }
+
+    if (pathname == "/api/rate") {
+      const levelId = url.searchParams.get("levelId")
+      const ratingParam = url.searchParams.get("rating")
+      const rating = ratingParam == "approve" ? true : false
+      if (!levelId) {
+        return new Response("Must Provide LevelId", { status: 400 })
+      }
+
+      if (!ratingParam) {
+        return new Response("Must Provide rating", { status: 400 })
+      }
+
+      const authentication = await authenticate(req)
+      if (authentication?.signedIn) {
+        const rated = (await sql`select user_id from ratings where user_id = ${authentication.user} AND level_id = ${levelId}`)
+        const isAlreadyRated = rated.length > 0
+
+        if (isAlreadyRated) {
+          const insert = await sql`
+            update ratings
+            set thumbs_up = ${rating}
+          `
+        } else {
+          const insert = await sql`
+            insert into ratings(thumbs_up, level_id, user_id)
+            values (${rating}, ${levelId}, ${authentication.user})
+          `
+        }
+
+        const updateLevels = await sql`
+          update levels 
+          set approvals = approvals + ${rating ? 1 : 0},
+          disapprovals = disapprovals + ${rating ? 0 : 1}
+          where id = ${levelId}
+        `
+        return new Response("Rated Sucessfully", { status: 200 })
       }
     }
 
