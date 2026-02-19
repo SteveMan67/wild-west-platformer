@@ -424,8 +424,8 @@ function updatePhysics(dt) {
 
   player.vy += ((0.7 * player.yInertia) + 0.5) * dt
 
-  if (player.vy > player.tileSize * 0.9) {
-    player.vy = player.tileSize * 0.9
+  if (player.vy > player.tileSize * 0.8) {
+    player.vy = player.tileSize * 0.8
   }
 
   if (player.jumpBufferTimer > 0 && player.coyoteTimer > 0) {
