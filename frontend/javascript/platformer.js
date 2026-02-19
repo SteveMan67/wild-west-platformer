@@ -192,7 +192,7 @@ export function initPlatformer() {
   scanLevelOnPlay()
 }
 
-function killPlayer() {
+export function killPlayer() {
   player.vy = 0
   player.vx = 0
   player.died = true

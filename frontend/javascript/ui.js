@@ -3,7 +3,7 @@ import { mode, setMode, input } from "./site.js"
 import { state } from "./state.js"
 import { canvas, updateCanvasSize, updateTileset } from "./renderer.js"
 import { toggleErase, changeSelectedTile, zoomMap, scrollCategoryTiles } from "./editor.js"
-import { uploadLevel } from "./api.js"
+import { killPlayer } from "./platformer.js"
 const { editor, player } = state
 
 export function toggleEditorUI(on) {
@@ -209,6 +209,9 @@ export function addEventListeners() {
       })
       input.value = ''
       input.click()
+   } else if (e.key == 'r') {
+      console.log("r")
+      killPlayer()
     }
   })
 }

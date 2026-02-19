@@ -40,7 +40,8 @@ export const state = {
     autoJump: false,
     controlTimer: 0,
     controlMultiplier: 1,
-    dissipations: []
+    dissipations: [],
+    gravity: 0.7
   },
   editor: {
     cam: {
