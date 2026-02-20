@@ -176,8 +176,6 @@ export function initPlatformer() {
   toggleEditorUI(false)
   player.x = editor.playerSpawn.x * player.tileSize
   player.y = editor.playerSpawn.y * player.tileSize
-  console.log(player.x, player.x)
-  console.log(editor.playerSpawn)
   player.w = player.tileSize
   player.h = player.tileSize
   player.hitboxW = 0.8 * player.tileSize
@@ -220,18 +218,14 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
   if (!mask) {
     const tile = editor.tileset[tileId >> 4]
     if (!tile) return false
-    console.log(tile)
     let img
     if (tile.images && tile.images.length > 0) {
       // calculate the frame 
       if (tile.type == "rotation") {
-        console.log("rotation")
         img = tile.images[tileId & 3]
-        console.log(tileId)
       } else {
         img = tile.images[0]
       }
-      console.log(img, img.width, img.height)
     } else {
       img = tile.image
     }
@@ -247,7 +241,6 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
     tileMaskCache.set(tileId, mask)
   }
 
-  console.log(tileMaskCache)
   const tileWorldX = tx * player.tileSize
   const tileWorldY = ty * player.tileSize
 
