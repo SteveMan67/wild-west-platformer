@@ -169,6 +169,7 @@ function calculateAdjacency(tileIdx, tileId, tiles, tileset, w, h) {
 }
 
 const tilesetMap = new Map()
+const imgMap = new Map()
 
 async function loadTileset(tilesetPath) {
   if (tilesetMap.has(tilesetPath)) return tilesetMap.get(tilesetPath)
@@ -207,7 +208,7 @@ async function loadTileset(tilesetPath) {
     }
   })
   await Promise.all(promises)
-  tilesetMap.set(path, tileset)
+  tilesetMap.set(tilesetPath, tileset)
   return tileset
 }
 
@@ -216,13 +217,21 @@ async function renderLevelPreview(canvas, levelData) {
   tileset = Object.values(tileset)
   console.log(tileset)
   if (!canvas || !levelData) return
+
   const tilesize = 25
   const ctx = canvas.getContext("2d")
+
 
   ctx.imageSmoothingEnabled = false;
 
   ctx.fillStyle = "#C29A62"
   ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  if (imgMap.has(levelData.id)) {
+    ctx.drawImage(imgMap.get(levelData.id), 0, 0)
+    return
+  }
+
   const decoded = decodeRLE(levelData.data.layers[0].data)
   const shifted = decoded.map(t => t << 4)
   const data = calculateAdjacencies(shifted, levelData.width, levelData.height, tileset)
@@ -247,7 +256,7 @@ async function renderLevelPreview(canvas, levelData) {
   let camY = Math.floor(spawnY - (canvas.height / 2))
 
   const maxCamX = (levelData.width * tilesize) - canvas.width
-  const maxCamY = (levelData.width * tilesize) - canvas.height
+  const maxCamY = (levelData.height * tilesize) - canvas.height
 
   camX = Math.max(0, Math.min(camX, maxCamX > 0 ? maxCamX : 0))
   camY = Math.max(0, Math.min(camY, maxCamY > 0 ? maxCamY : 0))
@@ -262,7 +271,7 @@ async function renderLevelPreview(canvas, levelData) {
     for (let x = startCol; x < endCol; x++) {
       const idx = y * levelData.width + x;
       const rotated = data[idx] + rotationData[idx]
-      const raw = data[idx]
+     const raw = data[idx]
 
       if (raw) {
         const tileId = raw >> 4;
@@ -278,4 +287,6 @@ async function renderLevelPreview(canvas, levelData) {
       }
     }
   }
+  const bitmap = await createImageBitmap(canvas)
+  imgMap.set(levelData.id, bitmap)
 }
