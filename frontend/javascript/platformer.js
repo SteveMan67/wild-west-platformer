@@ -215,10 +215,10 @@ export function killPlayer() {
 const tileMaskCache = new Map()
 
 function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
-  const tileId = tile >> 4
-  let mask = tileMaskCache.get(tileId)
+  const tileId = tile
+  let mask = tileMaskCache.get(tile)
   if (!mask) {
-    const tile = editor.tileset[tileId]
+    const tile = editor.tileset[tileId >> 4]
     if (!tile) return false
     console.log(tile)
     let img
@@ -226,7 +226,8 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
       // calculate the frame 
       if (tile.type == "rotation") {
         console.log("rotation")
-        img = tile.images[tile & 3]
+        img = tile.images[tileId & 3]
+        console.log(tileId)
       } else {
         img = tile.images[0]
       }
@@ -246,6 +247,7 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
     tileMaskCache.set(tileId, mask)
   }
 
+  console.log(tileMaskCache)
   const tileWorldX = tx * player.tileSize
   const tileWorldY = ty * player.tileSize
 
