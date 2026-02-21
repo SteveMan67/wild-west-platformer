@@ -186,6 +186,18 @@
         "hidden",
         "trigger"
       ]
+    },
+    {
+      "id": 17,
+      "name": "Trigger 3",
+      "file": "trigger-three.png",
+      "category": "triggers",
+      "type": "standalone",
+      "triggerAdjacency": false,
+      "mechanics": [
+        "noCollision",
+        "trigger"
+      ]
     }
   ]
 }

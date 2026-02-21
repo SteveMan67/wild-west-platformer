@@ -277,7 +277,6 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
 function handleTriggers(tx, ty) {
   const trigger = player.triggers.find(f => f.x == tx && f.y == ty)
   if (!trigger) return
-  console.log(trigger)
   player.standingOnTrigger = true
 
   for (const step of trigger.execute) {
