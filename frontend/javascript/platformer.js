@@ -174,7 +174,8 @@ function scanLevelOnPlay() {
 
 export function initPlatformer() {
   toggleEditorUI(false)
-  player.x = editor.playerSpawn.x * player.tileSize
+  player.toggledTile = true,
+    player.x = editor.playerSpawn.x * player.tileSize
   player.y = editor.playerSpawn.y * player.tileSize
   player.w = player.tileSize
   player.h = player.tileSize
@@ -192,7 +193,8 @@ export function initPlatformer() {
 }
 
 export function killPlayer() {
-  player.vy = 0
+  player.toggledTile = true,
+    player.vy = 0
   player.vx = 0
   player.died = true
   player.dieCameraTimer = player.dieCameraTime
@@ -275,8 +277,8 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
 function handleTriggers(tx, ty) {
   const trigger = player.triggers.find(f => f.x == tx && f.y == ty)
   if (!trigger) return
+  console.log(trigger)
   player.standingOnTrigger = true
-  console.log(player.triggers)
 
   for (const step of trigger.execute) {
     if (step.type == "toggleBlocks") {
@@ -369,14 +371,14 @@ function checkCollision(dt, x, y, w, h, simulate = false) {
       if (player.x !== oldX || player.y !== oldY) return false
       if (tileId !== 0) {
         const tile = editor.tileset[tileId]
+        if (tile && tile.mechanics && tile.mechanics.includes("trigger")) {
+          touchingTrigger = true
+        }
         if (tile && tile.mechanics && tile.mechanics.includes("killOnTouch")) {
           continue
         }
         if (tile && tile.mechanics && tile.mechanics.includes("hidden")) {
           continue
-        }
-        if (tile && tile.mechanics && tile.mechanics.includes("trigger")) {
-          touchingTrigger = true
         }
         if (tile && tile.mechanics && tile.mechanics.includes("bouncePad")) {
           continue

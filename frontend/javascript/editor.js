@@ -2,6 +2,7 @@ import { calcAdjacentAdjacency, calculateAdjacency, enemies } from "./platformer
 import { canvas, ctx, drawMap } from "./renderer.js"
 import { input, key } from "./site.js"
 import { state } from "./state.js"
+import { toggleTriggerDialog } from "./ui.js"
 const { editor, player } = state
 
 export function zoomMap(zoomDirectionIsIn) {
@@ -55,12 +56,15 @@ export function scrollCategoryTiles(up) {
     // sorry
     editor.selectedTile = !up ? Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) + 1) % currentSelectedTiles.length].dataset.tile) : Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) - 1 + currentSelectedTiles.length) % currentSelectedTiles.length].dataset.tile)
   }
-} export function initEditor() {
+}
+
+export function initEditor() {
   enemies.forEach(enemy => enemies.pop())
   ctx.imageSmoothingEnabled = false
 }
 
 export let mouseDown = false;
+export let rightClick = false
 export let rDown = false;
 export let spaceDown = false;
 export let lastIdx;
@@ -156,6 +160,22 @@ export function levelEditorLoop(dt) {
     }
   } else {
     mouseDown = false
+  }
+
+  if (input.rightClick) {
+    if (!rightClick) {
+      const idx = ty * map.w + tx
+      if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
+        const raw = editor.map.tiles[idx]
+        const tileId = raw >> 4
+        if (editor.tileset[tileId] && editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("trigger")) {
+          toggleTriggerDialog(true, tx, ty)
+        }
+      }
+      rightClick = true
+    }
+  } else {
+    rightClick = false
   }
 
   if (input.keys['r']) {
