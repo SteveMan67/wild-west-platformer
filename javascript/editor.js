@@ -2,7 +2,8 @@ import { calcAdjacentAdjacency, calculateAdjacency, enemies } from "./platformer
 import { canvas, ctx, drawMap } from "./renderer.js"
 import { input, key } from "./site.js"
 import { state } from "./state.js"
-const { editor } = state
+import { toggleTriggerDialog } from "./ui.js"
+const { editor, player } = state
 
 export function zoomMap(zoomDirectionIsIn) {
   const currentZoom = editor.tileSize
@@ -55,15 +56,30 @@ export function scrollCategoryTiles(up) {
     // sorry
     editor.selectedTile = !up ? Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) + 1) % currentSelectedTiles.length].dataset.tile) : Number(currentSelectedTiles[(currentSelectedTiles.indexOf(currentSelectedTiles.find(f => f.dataset.tile == String(editor.selectedTile))) - 1 + currentSelectedTiles.length) % currentSelectedTiles.length].dataset.tile)
   }
-} export function initEditor() {
+}
+
+export function initEditor() {
   enemies.forEach(enemy => enemies.pop())
   ctx.imageSmoothingEnabled = false
 }
 
 export let mouseDown = false;
+export let rightClick = false
 export let rDown = false;
 export let spaceDown = false;
 export let lastIdx;
+
+function addTrigger(tx, ty) {
+  player.triggers.push({
+    x: tx,
+    y: ty,
+    execute: [
+      {
+        type: "toggleBlocks"
+      }
+    ]
+  })
+}
 
 export function placeTile(tx, ty) {
   let tileLimitPlaced = false
@@ -73,6 +89,16 @@ export function placeTile(tx, ty) {
   const idx = ty * editor.map.w + tx
   const selected = editor.selectedTile
   const tile = editor.tileset[selected]
+
+  const underCursor = editor.map.tiles[idx] >> 4
+
+  if (editor.tileset[underCursor] && editor.tileset[underCursor].mechanics && editor.tileset[underCursor].mechanics.includes("trigger")) {
+    const trigger = player.triggers.findIndex(f => f.x == tx && f.y == ty)
+    if (trigger !== -1) {
+      player.triggers.slice(trigger, 1)
+    }
+  }
+
   if (tile && tile.mechanics) {
     if (tile.mechanics.includes("spawn") && !editor.limitedPlacedTiles.includes(selected)) {
       editor.playerSpawn = { x: tx, y: ty }
@@ -84,11 +110,15 @@ export function placeTile(tx, ty) {
     if (tile.mechanics.includes("onePerLevel") && !editor.limitedPlacedTiles.includes(selected)) {
       editor.limitedPlacedTiles.push(selected)
     }
+    if (tile.mechanics.includes("trigger")) {
+      addTrigger(tx, ty)
+    }
   }
 
   if (editor.limitedPlacedTiles.includes(editor.map.tiles[idx] >> 4) && editor.map.tiles[idx] >> 4 !== selected) {
     editor.limitedPlacedTiles = editor.limitedPlacedTiles.filter(f => f !== editor.map.tiles[idx] >> 4)
   }
+
 
   if (tile.type == "adjacency" && !tileLimitPlaced) {
     calcAdjacentAdjacency(idx, editor.selectedTile)
@@ -130,6 +160,22 @@ export function levelEditorLoop(dt) {
     }
   } else {
     mouseDown = false
+  }
+
+  if (input.rightClick) {
+    if (!rightClick) {
+      const idx = ty * map.w + tx
+      if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
+        const raw = editor.map.tiles[idx]
+        const tileId = raw >> 4
+        if (editor.tileset[tileId] && editor.tileset[tileId].mechanics && editor.tileset[tileId].mechanics.includes("trigger")) {
+          toggleTriggerDialog(true, tx, ty)
+        }
+      }
+      rightClick = true
+    }
+  } else {
+    rightClick = false
   }
 
   if (input.keys['r']) {
