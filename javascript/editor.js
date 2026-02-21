@@ -133,6 +133,26 @@ export function placeTile(tx, ty) {
   editor.dirty = true
 }
 
+const selectedTileEl = document.querySelector(".selected-tile")
+const tileIdEl = document.querySelector(".selected-tile-id")
+const xEl = document.querySelector(".x")
+const yEl = document.querySelector(".y")
+
+function updateBottomBar(tx, ty) {
+  if (selectedTileEl.innerText !== editor.tileset[editor.selectedTile].name) {
+    selectedTileEl.innerText = editor.tileset[editor.selectedTile].name
+  }
+  if (tileIdEl.innerText !== String(editor.selectedTile)) {
+    tileIdEl.innerText = String(editor.selectedTile)
+  }
+  if (xEl.innerText !== String(tx)) {
+    xEl.innerText = String(tx)
+  }
+  if (yEl.innerText !== String(ty)) {
+    yEl.innerText = String(ty)
+  }
+}
+
 export function levelEditorLoop(dt) {
   let timeScale = dt * 60
   const { map, cam, tileSize, tileset } = editor
@@ -145,6 +165,8 @@ export function levelEditorLoop(dt) {
   const worldY = input.y + cam.y
   const tx = Math.floor(worldX / tileSize)
   const ty = Math.floor(worldY / tileSize)
+
+  updateBottomBar(tx, ty)
 
   if (input.down) {
     const idx = ty * map.w + tx

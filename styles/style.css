@@ -13,14 +13,16 @@ body {
   height: 100vh;
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-template-rows: 80px 1fr;
+  grid-template-rows: 80px 1fr 20px;
   grid-template-areas:
     "topbar topbar"
-    "game sidebar";
+    "game sidebar"
+    "bottom-bar sidebar";
 }
 
 .grid-uihidden {
   grid-template-columns: 1fr 0px;
+  grid-template-rows: 80px 1fr;
 }
 
 .grid-uihidden ::after {
@@ -72,7 +74,27 @@ body {
   scrollbar-width: none;
 }
 
+.bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 5px;
+  grid-area: bottom-bar;
+}
 
+.left-info,
+.right-info {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.left-info p,
+.right-info p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 350;
+  padding-bottom: 4px;
+}
 
 .category-blocks {
   display: flex;
