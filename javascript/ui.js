@@ -307,7 +307,6 @@ export function addEventListeners() {
       input.value = ''
       input.click()
     } else if (e.key == 'r') {
-      console.log("r")
       killPlayer()
     }
   })

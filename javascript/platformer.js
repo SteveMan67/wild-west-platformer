@@ -1,6 +1,6 @@
 import { toggleEditorUI, sortByCategory } from "./ui.js"
 import { canvas, ctx, drawEnemies, drawMap, drawPlayer, getCameraCoords } from "./renderer.js"
-import { endLevel, key, playSound, input } from "./site.js"
+import { endLevel, key, playSound, input, mode } from "./site.js"
 import { state } from "./state.js"
 import { createMap } from "./file-utils.js"
 const { player, editor } = state
@@ -193,6 +193,7 @@ export function initPlatformer() {
 }
 
 export function killPlayer() {
+  if (mode == "editor") return
   player.toggledTile = true,
     player.vy = 0
   player.vx = 0
