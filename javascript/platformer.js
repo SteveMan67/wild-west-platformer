@@ -288,6 +288,10 @@ function handleTriggers(tx, ty) {
       if (!step.x || !step.y) continue
       teleportPlayer(step.x, step.y)
     }
+    if (step.type == "rotate") {
+      if (!step.x || !step.y || !step.rotation) return
+      rotateTile(step.x, step.y, step.rotation)
+    }
   }
 }
 
@@ -301,6 +305,15 @@ function teleportPlayer(tx, ty) {
   player.y = ty * player.tileSize
 }
 
+function rotateTile(tx, ty, amount) {
+  const idx = ty * editor.width + tx
+  const raw = editor.map.tiles[idx]
+  const rotation = raw & 3
+  const newRotation = (rotation + amount) % 4
+  if (editor.tileset[raw >> 4].type == "rotation") {
+    editor.map.tiles[idx] = (raw >> 4 << 4) + newRotation
+  }
+}
 function mechanics(dt, tileIdx, tileId, tx, ty, x, y, w, h) {
   const mechanics = editor.tileset[tileId].mechanics
   if (!mechanics) return

@@ -95,6 +95,7 @@ function addStepToUI(stepData) {
       <select class="action-type" id="type">
         <option value="toggleBlocks" ${stepData.type === 'toggleBlocks' ? 'selected' : ''}>Swap red and blue</option>
         <option value="teleport" ${stepData.type === "teleport" ? 'selected' : ''}>Teleport</option>
+        <option value="rotate" ${stepData.type === "rotate" ? 'selected' : ''}>Rotate Block</option>
       </select>
     </div>
     <div class="options">
@@ -109,7 +110,18 @@ function getOptionHTML(stepData) {
   let html = ''
 
   if (stepData.type == "teleport") {
-    html += `x <input type="number" class="tp-x" value="${stepData.x || 0}"> y <input type="number" class="tp-y" value=${stepData.y || 0}>`
+    html += `x <input type="number" class="tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="tp-y" value=${stepData.y || 0} min="0" max="${editor.height}>`
+  }
+  if (stepData.type == "rotate") {
+    html += `
+    x <input type="number" class="tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}">
+    y <input type="number" class="tp-y" value=${stepData.y || 0} min="0" max="${editor.height}">
+    <select class="rotation-amount">
+      <option value="1">90</option>
+      <option value="2">180</option>
+      <option value="3">270</option>
+    </select>
+    `
   }
   html += `<img src="/assets/icons/delete.svg" alt="delete" class="delete-step">`
   console.log(html)
@@ -165,6 +177,14 @@ export function addEventListeners() {
         const yInput = stepEl.querySelector('.tp-y')
         stepData.x = xInput ? parseInt(xInput.value, 10) : 0
         stepData.y = yInput ? parseInt(yInput.value, 10) : 0
+      }
+      if (type == 'rotate') {
+        const xInput = stepEl.querySelector('.tp-x')
+        const yInput = stepEl.querySelector('.tp-y')
+        const rotationEl = stepEl.querySelector('.rotation-amount')
+        stepData.x = xInput ? Number(xInput.value) : 0
+        stepData.y = yInput ? Number(yInput.value) : 0
+        stepData.rotation = rotationEl ? Number(rotationEl.value) : 1
       }
       newExecuteArray.push(stepData)
     })
