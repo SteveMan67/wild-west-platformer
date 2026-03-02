@@ -2,9 +2,6 @@
 - make it more obvious that a level is saved
 - if the user isn't signed in, make ux so they can save their level
 - allow resizing of the level (I already have a function for that)
-- horizontal trampoline movement
-- add you win screen
-- select rotation option in dropdown for rotations
 - only move the camera on selection if `isHoveringSelection` is true
 
 # Finishing Touches

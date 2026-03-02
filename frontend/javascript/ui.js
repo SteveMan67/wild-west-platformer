@@ -122,9 +122,9 @@ function getOptionHTML(stepData) {
     x <input type="number" class="rotate-x" value="${stepData.x || 0}" min="0" max="${editor.width}">
     y <input type="number" class="rotate-y" value=${stepData.y || 0} min="0" max="${editor.height}">
     <select class="rotation-amount">
-      <option value="1">90</option>
-      <option value="2">180</option>
-      <option value="3">270</option>
+      <option value="1" ${stepData.beforeRotation == 1 ? 'selected' : ''}>90</option>
+      <option value="2" ${stepData.beforeRotation == 2 ? 'selected' : ''}>180</option>
+      <option value="3" ${stepData.beforeRotation == 3 ? 'selected' : ''}>270</option>
     </select>
     `
   }
