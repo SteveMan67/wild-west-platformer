@@ -531,25 +531,37 @@ function updatePhysics(dt) {
     const velDir = Math.sign(player.vx)
 
     if (inputDir !== 0 && inputDir === velDir) {
+      // if we're pressing the same way as we're going
       if (Math.abs(player.vx) < Math.abs(targetVx)) {
         player.vx += inputDir * scaledXInertia * currentControl * dt
         if (Math.abs(player.vx) > Math.abs(targetVx)) player.vx = targetVx
       } else if (player.grounded && Math.abs(player.vx) > Math.abs(targetVx)) {
         // don't allow the player to travel faster than player.speed if they're touching the ground
         player.vx = targetVx
+      } else if (!player.grounded && Math.abs(player.vx) > Math.abs(targetVx)) {
+        // treat it the same as if right/left aren't pressed
+        if (player.vx < 0) {
+          player.vx += scaledXInertia * 0.45 * dt
+          if (player.vx > 0) player.vx = 0
+        } else if (player.vx > 0) {
+          player.vx -= scaledXInertia * 0.45 * dt
+          if (player.vx < 0) player.vx = 0
+        }
       }
     } else {
+      // if we're not pressing the same way we're going
       if (player.vx < targetVx) {
-        player.vx += scaledXInertia * currentControl * dt
+        player.vx += scaledXInertia * 0.45 * dt
         if (player.vx > targetVx) player.vx = targetVx
       } else if (player.vx > targetVx) {
-        player.vx -= scaledXInertia * currentControl * dt
+        player.vx -= scaledXInertia * 0.45 * dt
         if (player.vx < targetVx) player.vx = targetVx
       }
     }
   }
 
-  if (!activeInput && player.grounded) {
+  if (!activeInput) {
+    // if we're not pressing right or left
     if (player.vx < 0) {
       player.vx += scaledXInertia * 0.45 * dt
       if (player.vx > 0) player.vx = 0

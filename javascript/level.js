@@ -50,6 +50,7 @@ const finishes = document.querySelector(".finishes")
 const fullscreenControl = document.querySelector(".fullscreen-control")
 const game = document.querySelector(".game")
 const elem = document.documentElement
+const winScreen = document.querySelector(".win-screen")
 
 const mobileControls = document.querySelector(".mobile-controls")
 const joystick = document.querySelector(".knob")
@@ -58,6 +59,10 @@ const joystickHitbox = document.querySelector(".joystick")
 let joystickActive = false
 let startX = 0
 let startY = 0
+
+document.addEventListener("level:finished", (e) => {
+  winScreen.style.display = "flex"
+})
 
 joystickHitbox?.addEventListener("touchstart", (e) => {
   e.preventDefault()
