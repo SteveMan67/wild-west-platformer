@@ -25,6 +25,7 @@ body .game {
   width: 100%;
   border: none;
   z-index: 0;
+  position: absolute;
 }
 
 .game,
