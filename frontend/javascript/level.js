@@ -51,6 +51,7 @@ const fullscreenControl = document.querySelector(".fullscreen-control")
 const game = document.querySelector(".game")
 const elem = document.documentElement
 const winScreen = document.querySelector(".win-screen")
+const playAgain = document.querySelector(".play-again")
 
 const mobileControls = document.querySelector(".mobile-controls")
 const joystick = document.querySelector(".knob")
@@ -60,8 +61,13 @@ let joystickActive = false
 let startX = 0
 let startY = 0
 
-document.addEventListener("level:finished", (e) => {
-  winScreen.style.display = "flex"
+playAgain.addEventListener("click", () => {
+  winScreen.classList.add("hidden")
+})
+
+window.addEventListener("level:finished", () => {
+  console.log("you won!")
+  winScreen.classList.remove("hidden")
 })
 
 joystickHitbox?.addEventListener("touchstart", (e) => {

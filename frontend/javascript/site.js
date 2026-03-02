@@ -15,6 +15,7 @@ export let mode = "editor"
 export const inEditor = !window.location.pathname.startsWith("/level")
 
 export function endLevel() {
+  window.dispatchEvent(new CustomEvent("level:finished"))
   mode = inEditor ? "editor" : "play"
   setTimeout(inEditor ? initEditor : initPlatformer, 1)
   playSound("/assets/audio/victory.wav")
