@@ -70,6 +70,47 @@ body .game {
   align-items: end;
 }
 
+.win-screen {
+  position: absolute;
+  background-color: #c29a62;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+}
+
+.win-screen.hidden {
+  display: none;
+}
+
+.win-screen p {
+  font-size: 35px;
+  margin: 10px;
+}
+
+.win-screen a {
+  color: black;
+  font-size: 25px;
+}
+
+.win-screen button {
+  outline: none;
+  border: none;
+  background: transparent;
+  font-size: 25px;
+  color: #C29A62;
+  background-color: black;
+  border-radius: 500px;
+  padding: 5px 15px;
+  font-family: "Fredoka", sans-serif;
+  margin: 10px;
+}
+
 .mobile-controls.hidden {
   display: none;
 }
