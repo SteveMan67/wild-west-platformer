@@ -368,6 +368,7 @@ export async function updateMap() {
     alert("Please log in to save levels (you can save as json and upload later if you wish to save progress)")
     return
   }
+
   const levelNum = editor.level.id
   editor.dirty = false
   const serverUrl = window.location.origin
@@ -378,12 +379,16 @@ export async function updateMap() {
     payload.levelId = levelNum
     payload.data = createMap()
 
+    const saving = document.querySelector(".saving")
+    saving.classList.remove("hidden")
+
     fetch(`${serverUrl}/api/edit`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(payload),
     }).then(res => {
+      saving.classList.add("hidden")
     })
   } else {
     const levelId = await uploadLevel([

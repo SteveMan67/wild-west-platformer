@@ -27,10 +27,16 @@ body {
 .saving {
   display: flex;
   flex-direction: row;
+  gap: 10px;
+  align-items: center;
+}
+
+.saving.hidden {
+  display: none;
 }
 
 .loading {
-  height: 18sx;
+  height: 15px;
   aspect-ratio: 1;
   border-top: 1px solid rgba(0, 0, 0, 0.5);
   border-radius: 50%;
