@@ -123,7 +123,7 @@ export function drawMap(tileSize = editor.tileSize, cam = editor.cam) {
     }
   }
 
-  if (player.triggers && editor.showTriggerHighlights) {
+  if (player.triggers && editor.showTriggerHighlights && mode !== "play") {
     for (let trigger of player.triggers) {
       if (trigger.execute.length !== 0) {
         let needsTriggerHighlight = false
