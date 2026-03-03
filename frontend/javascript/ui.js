@@ -187,8 +187,16 @@ export function addEventListeners() {
   const applyButton = document.querySelector('.apply')
   let mousedown = false
   const minimapToggle = document.getElementById("show-minimap")
+  const triggerHighlightToggle = document.getElementById("trigger-highlight")
   const minimap = document.querySelector(".minimap")
 
+  triggerHighlightToggle.addEventListener("input", (e) => {
+    if (triggerHighlightToggle.checked) {
+      editor.showTriggerHighlights = true
+    } else {
+      editor.showTriggerHighlights = false
+    }
+  })
   minimapToggle.addEventListener("input", (e) => {
     if (minimapToggle.checked) {
       minimap.style.display = 'block'
