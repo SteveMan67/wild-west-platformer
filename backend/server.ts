@@ -426,7 +426,6 @@ const server = Bun.serve({
       const levelId = url.searchParams.get("levelId")
       const ratingParam = url.searchParams.get("rating")
       const rating = ratingParam === "true"
-      console.log(ratingParam, rating)
       if (!levelId) {
         return new Response("Must Provide LevelId", { status: 400 })
       }
@@ -441,7 +440,6 @@ const server = Bun.serve({
         const isAlreadyRated = rated.length > 0
 
         if (isAlreadyRated) {
-          console.log(rated[0].thumbs_up)
           const insert = await sql`
             update ratings
             set thumbs_up = ${rating}
