@@ -116,7 +116,7 @@ function getOptionHTML(stepData) {
   let html = ''
 
   if (stepData.type == "teleport") {
-    html += `x <input type="number" class="tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="tp-y" value=${stepData.y || 0} min="0" max="${editor.height}">`
+    html += `x <input type="number" class="tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="tp-y" value=${stepData.y || 0} min="0" max="${editor.height}"> instant <input type="checkbox" class="instant toggle" ${stepData.instant ? 'checked' : ''}>`
   }
   if (stepData.type == "rotate") {
     html += `
@@ -292,6 +292,8 @@ export function addEventListeners() {
       if (type == 'teleport') {
         const xInput = stepEl.querySelector('.tp-x')
         const yInput = stepEl.querySelector('.tp-y')
+        const instant = stepEl.querySelector('.instant')
+        stepData.instant = instant.checked
         stepData.x = xInput ? parseInt(xInput.value, 10) : 0
         stepData.y = yInput ? parseInt(yInput.value, 10) : 0
       }

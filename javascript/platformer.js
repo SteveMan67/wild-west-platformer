@@ -297,7 +297,7 @@ function handleTriggers(tx, ty) {
       }
       if (step.type == "teleport") {
         if (step.x == undefined || step.y == undefined) continue
-        teleportPlayer(step.x, step.y)
+        teleportPlayer(step.x, step.y, step.instant || false)
         continue
       }
       if (step.type == "rotate") {
@@ -328,14 +328,19 @@ function handleTriggers(tx, ty) {
   executeTriggerSteps(trigger, 0)
 }
 
-function teleportPlayer(tx, ty) {
-  player.vy = 0
-  player.vx = 0
-  player.died = true
-  player.dieCameraTimer = player.dieCameraTime
-  player.dieCameraStart = { x: player.cam.x, y: player.cam.y }
-  player.x = tx * player.tileSize
-  player.y = ty * player.tileSize
+function teleportPlayer(tx, ty, instant) {
+  if (instant) {
+    player.x = tx * player.tileSize
+    player.y = ty * player.tileSize
+  } else {
+    player.vy = 0
+    player.vx = 0
+    player.died = true
+    player.dieCameraTimer = player.dieCameraTime
+    player.dieCameraStart = { x: player.cam.x, y: player.cam.y }
+    player.x = tx * player.tileSize
+    player.y = ty * player.tileSize
+  }
 }
 
 function rotateTile(tx, ty, amount) {
