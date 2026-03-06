@@ -6,6 +6,7 @@
 - add dissipation animation
 - only highlight selected trigger (if any) and have different colors for different operations
 - add trigger limit
+- make mobile controls come back when you
 
 # Finishing Touches
 - convert tiles to spritesheet

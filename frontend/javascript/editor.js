@@ -5,6 +5,11 @@ import { state } from "./state.js"
 import { toggleTriggerDialog } from "./ui.js"
 const { editor, player } = state
 
+/**
+ * 
+ * @param {boolean} zoomDirectionIsIn - the direction to zoom, true = in
+ * @param {amount} amount - how many pixels to change the tilesize by
+ */
 export function zoomMap(zoomDirectionIsIn, amount) {
   const oldTileSize = editor.tileSize
   let newZoom = editor.tileSize
@@ -25,6 +30,16 @@ export function zoomMap(zoomDirectionIsIn, amount) {
   editor.cam.y = (input.y + editor.cam.y) * scaleRatio - input.y
   editor.tileSize = newZoom
   drawMinimap()
+}
+
+function getMinMaxXY() {
+  const { selection } = editor
+  const minX = Math.min(selection.startX, selection.endX)
+  const maxX = Math.max(selection.startX, selection.endX)
+  const minY = Math.min(selection.startY, selection.endY)
+  const maxY = Math.max(selection.startY, selection.endY)
+
+  return { minX: minX, maxX: maxX, minY: minY, maxY: maxY }
 }
 
 export function toggleErase() {
@@ -92,10 +107,8 @@ function addTrigger(tx, ty) {
 }
 
 export function placeTile(tx, ty) {
-  let tileLimitPlaced = false
-  if (editor.limitedPlacedTiles.includes(editor.selectedTile)) {
-    tileLimitPlaced = true
-  }
+  let tileLimitPlaced = editor.limitedPlacedTiles.includes(editor.selectedTile)
+
   const idx = ty * editor.map.w + tx
   const selected = editor.selectedTile
 
@@ -104,18 +117,17 @@ export function placeTile(tx, ty) {
   if (mechanicsHas(underCursor, "trigger")) {
     const trigger = player.triggers.findIndex(f => f.x == tx && f.y == ty)
     if (trigger !== -1) {
-      player.triggers.slice(trigger, 1)
+      player.triggers.splice(trigger, 1)
     }
   }
-
-  if (typeIs(selected, "spawn") && !editor.limitedPlacedTiles.includes(selected)) {
+  if (typeIs(selected, "spawn") && !tileLimitPlaced) {
     editor.playerSpawn = { x: tx, y: ty }
     console.log(editor.playerSpawn)
   }
-  if (typeIs(selected, "end") && !editor.limitedPlacedTiles.includes(selected)) {
+  if (typeIs(selected, "end") && !tileLimitPlaced) {
     editor.end = { x: tx, y: ty }
   }
-  if (typeIs(selected, "onePerLevel") && !editor.limitedPlacedTiles.includes(selected)) {
+  if (typeIs(selected, "onePerLevel") && !tileLimitPlaced) {
     editor.limitedPlacedTiles.push(selected)
   }
   if (typeIs(selected, "trigger")) {
@@ -130,8 +142,8 @@ export function placeTile(tx, ty) {
   if (typeIs(selected, "adjacency") && !tileLimitPlaced) {
     calcAdjacentAdjacency(idx, editor.selectedTile)
   } else if (typeIs(selected, "rotation") && !tileLimitPlaced) {
-    calcAdjacentAdjacency(idx, editor.selectedTile)
     editor.map.tiles[idx] = (editor.selectedTile * 16) + editor.currentRotation
+    calcAdjacentAdjacency(idx, editor.selectedTile)
   } else if (typeIs(selected, "empty")) {
     calcAdjacentAdjacency(idx, selected)
   } else if (!tileLimitPlaced) {
@@ -164,7 +176,6 @@ function updateBottomBar(tx, ty) {
 
 export function undo() {
   const latestChange = editor.history[editor.history.length - 1]
-  console.log(latestChange)
   if (!latestChange) return
   if (latestChange.type == "replaceBlocks") {
     if (!latestChange.replacedBlocks) return
@@ -208,10 +219,7 @@ export function redo() {
 export function liftSelection() {
   const { selection, map, selectionLayer } = editor
 
-  const minX = Math.min(selection.startX, selection.endX)
-  const maxX = Math.max(selection.startX, selection.endX)
-  const minY = Math.min(selection.startY, selection.endY)
-  const maxY = Math.max(selection.startY, selection.endY)
+  const { minX, maxX, minY, maxY } = getMinMaxXY()
 
   selection.triggers = []
   if (player.triggers) {
@@ -316,9 +324,14 @@ export function stampSelection() {
   drawMinimap()
 }
 
-export function levelEditorLoop(dt) {
-  let timeScale = dt * 60
-  const { map, cam, tileSize, tileset } = editor
+function handleInput(timeScale) {
+  const tx = editor.tx
+  const ty = editor.ty
+  const { minX, maxX, minY, maxY } = getMinMaxXY()
+  const { selection, map, cam, tileSize, tileset } = editor
+  const shiftDown = input.keys["Shift"] || false
+  const isHoveringSelection = editor.tx >= minX && editor.tx <= maxX && editor.ty >= minY && editor.ty <= maxY
+
   const speed = 10
   if (key("up") && cam.y >= 0) {
     cam.y -= speed * timeScale
@@ -337,18 +350,9 @@ export function levelEditorLoop(dt) {
     drawMinimap()
   }
 
-  const shiftDown = input.keys["Shift"]
 
-  const { selection } = editor
-
-  const minX = Math.min(selection.startX, selection.endX) + selection.offsetX
-  const maxX = Math.max(selection.startX, selection.endX) + selection.offsetX
-  const minY = Math.min(selection.startY, selection.endY) + selection.offsetY
-  const maxY = Math.max(selection.startY, selection.endY) + selection.offsetY
-  const isHoveringSelection = editor.tx >= minX && editor.tx <= maxX && editor.ty >= minY && editor.ty <= maxY
-
-
-  if (editor.selection.active && isHoveringSelection) {
+  // move the camera if we're on the outside of the box
+  if (selection.active && isHoveringSelection) {
     const sideThreshold = 50
     const movementSpeed = 15
     if (input.x < sideThreshold) {
@@ -366,19 +370,6 @@ export function levelEditorLoop(dt) {
       drawMinimap()
     }
   }
-
-  cam.x = Math.round(Math.max(0, Math.min(cam.x, (editor.map.w * editor.tileSize) - canvas.width)))
-  cam.y = Math.round(Math.max(0, Math.min(cam.y, (editor.map.h * editor.tileSize) - canvas.height)))
-  const worldX = input.x + cam.x
-  const worldY = input.y + cam.y
-  const tx = Math.floor(worldX / tileSize)
-  const ty = Math.floor(worldY / tileSize)
-  editor.tx = tx
-  editor.ty = ty
-
-
-  updateBottomBar(tx, ty)
-
 
   if (input.down) {
     handledBySelection = false
@@ -398,9 +389,7 @@ export function levelEditorLoop(dt) {
         selection.initialOffsetX = selection.offsetX
         selection.initialOffsetY = selection.offsetY
         handledBySelection = true
-
       } else if (shiftDown) {
-        // selecting, draw new box
         if (selection.hasFloatingTiles) {
           stampSelection()
         }
@@ -481,28 +470,7 @@ export function levelEditorLoop(dt) {
     mouseDown = false
   }
 
-  if (input.rightClick) {
-    if (!rightClick) {
-      const idx = ty * map.w + tx
-      if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
-        const raw = editor.map.tiles[idx]
-        const tileId = raw >> 4
-        if (mechanicsHas(tileId, "trigger")) {
-          toggleTriggerDialog(true, tx, ty)
-        }
-      }
-      rightClick = true
-    }
-  } else {
-    rightClick = false
-  }
-
   if (input.keys['r'] && selection.active && !rDown) {
-    const minX = Math.min(selection.startX, selection.endX)
-    const maxX = Math.max(selection.startX, selection.endX)
-    const minY = Math.min(selection.startY, selection.endY)
-    const maxY = Math.max(selection.startY, selection.endY)
-
     const changedBlocks = []
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
@@ -512,7 +480,7 @@ export function levelEditorLoop(dt) {
         let afterRotation = 0
         if (selection.hasFloatingTiles) {
           const raw = editor.selectionLayer[idx]
-          if (raw !== 0 && typeIs(raw >> 4, "rotatoin")) {
+          if (raw !== 0 && typeIs(raw >> 4, "rotation")) {
             beforeRotation = raw & 3
             afterRotation = ((raw & 3) + 1) % 4
             editor.selectionLayer[idx] = (editor.selectionLayer[idx] >> 4 << 4) + afterRotation
@@ -538,22 +506,22 @@ export function levelEditorLoop(dt) {
     drawMinimap()
     rDown = true
   } else if (input.keys["r"]) {
-    const idx = ty * map.w + tx
     if (!rDown) {
+      const idx = ty * map.w + tx
       if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
-        if (tileset[editor.map.tiles[idx] >> 4].type == 'rotation') {
+        if (typeIs(editor.map.tiles[idx] >> 4, 'rotation')) {
           const currentRotation = editor.map.tiles[idx] & 15
           const newRotation = (currentRotation + 1) % 4
           editor.map.tiles[idx] = (editor.map.tiles[idx] >> 4 << 4) + newRotation
           editor.currentRotation = newRotation
-        } else if (editor.map.tiles[idx] >> 4 == 0) {
+        } else {
           const newRotation = (editor.currentRotation + 1) % 4
           editor.currentRotation = newRotation
         }
         editor.dirty = true
       }
-      rDown = true
     }
+    rDown = true
   } else {
     rDown = false
   }
@@ -566,6 +534,27 @@ export function levelEditorLoop(dt) {
   } else {
     spaceDown = false
   }
+
+}
+
+export function levelEditorLoop(dt) {
+  let timeScale = dt * 60
+  const { map, cam, tileSize, tileset } = editor
+
+
+  handleInput(timeScale)
+
+  cam.x = Math.round(Math.max(0, Math.min(cam.x, (editor.map.w * editor.tileSize) - canvas.width)))
+  cam.y = Math.round(Math.max(0, Math.min(cam.y, (editor.map.h * editor.tileSize) - canvas.height)))
+  const worldX = input.x + cam.x
+  const worldY = input.y + cam.y
+  const tx = Math.floor(worldX / tileSize)
+  const ty = Math.floor(worldY / tileSize)
+  editor.tx = tx
+  editor.ty = ty
+
+
+  updateBottomBar(tx, ty)
 
   ctx.fillStyle = '#C29A62'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -614,30 +603,23 @@ export function levelEditorLoop(dt) {
   }
   ctx.globalAlpha = 1
 }
+
 export function updateLevelSize(width, height) {
-  // need to update the array with new values or slice old ones 
-  // and also update editor object
-  // note: add new columns on the right of the map
-  // note: and new rows on top and same for removing
   let tiles = Array.from(editor.map.tiles)
   if (editor.width > width) {
     const diff = width - editor.width
     for (let h = 0; h < editor.height; h++) {
-      // delete the end of the rows
       tiles.splice((h * width) + width, editor.width - width)
     }
   } else if (editor.width < width) {
-    // !!Working!!
     const diff = Math.abs(width - editor.width)
     for (let h = 0; h < editor.height; h++) {
       tiles.splice(((h * width) + width - diff), 0, ...Array(diff).fill(0))
     }
   }
   if (editor.height > height) {
-    // !!Working!!
     tiles.splice(0, (editor.height - height) * width)
   } else if (editor.height < height) {
-    // !!Working!!
     Array((height - editor.height) * width).fill(0)
     tiles.unshift(...Array((height - editor.height) * width).fill(0))
   }
