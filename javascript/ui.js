@@ -430,8 +430,7 @@ export function addEventListeners() {
     })
   })
 
-  canvas.addEventListener('wheel', (e) => {
-    if (input.keys["Shift"] || input.keys["Alt"]) return
+  window.addEventListener('wheel', (e) => {
     e.preventDefault()
 
     if (e.ctrlKey) {
