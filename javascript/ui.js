@@ -170,6 +170,50 @@ export function addEventListeners() {
     }
   })
 
+  const linkEl = document.querySelector(".share-link .link")
+  const linkBox = document.querySelector(".share-link")
+
+  const url = window.location.href
+  const hasEditorId = /\/editor\/\d+/.test(url)
+  let out = url.replace(/^https?:\/\//, '').replace('/editor/', '/level/')
+  if (hasEditorId) {
+    linkEl.innerText = out
+  } else {
+    out = ''
+  }
+
+  linkBox.addEventListener("click", async () => {
+    if (out === '') return
+    const text = out
+    try {
+      await navigator.clipboard.writeText(text)
+      linkEl.innerText = 'Copied'
+      setTimeout(() => {
+        if (out !== '') linkEl.innerText = out
+      }, 1000)
+      return
+    } catch {
+
+    }
+
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.select()
+    try {
+      document.execCommand('copy')
+      linkEl.innerText = "Copied"
+      setTimeout(() => {
+        if (out !== '') linkEl.innerText = out
+      }, 1000)
+    } finally {
+      document.removeChild(ta)
+    }
+
+  })
+
   // page event listeners
   const menuElement = document.querySelector(".overlay")
   const eraserButton = document.querySelector('.eraser')
