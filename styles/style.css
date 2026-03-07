@@ -473,7 +473,7 @@ div.step .options input.coord {
   font-size: 25px;
 }
 
-.step input[type="number"] {
+.number {
   height: calc(100% - 20px);
   max-width: 75px;
   margin: 10px;
@@ -486,6 +486,38 @@ div.step .options input.coord {
   border-radius: 10px;
   font-family: "Fredoka", sans-serif;
   appearance: textfield;
+}
+
+.menu-item .number {
+  appearance: unset;
+  border-radius: 15px;
+  font-size: 20px;
+  border: 3px solid black;
+}
+
+.menu-item {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.menu-item label {
+  font-weight: 500;
+}
+
+.resize-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.resize-wrapper .resize {
+  border: none;
+  outline: none;
+  background: black;
+  color: #C29A62;
+  font-size: 20px;
+  border-radius: 15px;
+  padding: 5px 15px;
+  font-family: "Fredoka", sans-serif;
 }
 
 .step input::-webkit-outer-spin-button,
