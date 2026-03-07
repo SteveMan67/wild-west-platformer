@@ -734,6 +734,12 @@ export function setInputEventListeners() {
     e.preventDefault()
   })
 
+  canvas.addEventListener("touchstart", () => {
+    player.hasKeyboard = false
+    const mobileControls = document.querySelector('.mobile-contorls')
+    mobileControls?.classList.add("hidden")
+  })
+
   window.addEventListener('keydown', e => {
     if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
     input.keys[e.key] = true

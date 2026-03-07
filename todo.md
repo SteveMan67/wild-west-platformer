@@ -5,8 +5,6 @@
 - add dissipation animation
 - only highlight selected trigger (if any) and have different colors for different operations
 - add trigger limit
-- make mobile controls come back when you
-- limit camera zoom better width Math.floor and ratios of canvas width to tiles
 - saving doesn't work correctly?
 - add share link in share menu tab with copy button
 
