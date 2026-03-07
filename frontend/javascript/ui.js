@@ -70,6 +70,7 @@ export function toggleTriggerDialog(open, tx, ty) {
     triggerDialog.style.display = "flex"
 
     activeTrigger = player.triggers.find(f => f.x == tx && f.y == ty)
+    console.log(activeTrigger)
     if (activeTrigger && activeTrigger.execute) {
       addStepsToUI(activeTrigger.execute)
     }
@@ -116,12 +117,12 @@ function getOptionHTML(stepData) {
   let html = ''
 
   if (stepData.type == "teleport") {
-    html += `x <input type="number" class="tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="tp-y" value=${stepData.y || 0} min="0" max="${editor.height}"> instant <input type="checkbox" class="instant toggle" ${stepData.instant ? 'checked' : ''}>`
+    html += `x <input type="number" class="number tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="number tp-y" value=${stepData.y || 0} min="0" max="${editor.height}"> instant <input type="checkbox" class="instant toggle" ${stepData.instant ? 'checked' : ''}>`
   }
   if (stepData.type == "rotate") {
     html += `
-    x <input type="number" class="rotate-x" value="${stepData.x || 0}" min="0" max="${editor.width}">
-    y <input type="number" class="rotate-y" value=${stepData.y || 0} min="0" max="${editor.height}">
+    x <input type="number" class="number rotate-x" value="${stepData.x || 0}" min="0" max="${editor.width}">
+    y <input type="number" class="number rotate-y" value=${stepData.y || 0} min="0" max="${editor.height}">
     <select class="rotation-amount">
       <option value="1" ${stepData.beforeRotation == 1 ? 'selected' : ''}>90</option>
       <option value="2" ${stepData.beforeRotation == 2 ? 'selected' : ''}>180</option>
@@ -135,8 +136,8 @@ function getOptionHTML(stepData) {
       tileOptions += `<option value=${tile.id} ${tile.id == stepData.block ? 'selected' : ''}>${tile.name}</option>`
     }
     html += `
-      x <input type="number" class="block-x coord" value="${stepData.x || 0}" min="0" max="${editor.width}">
-      y <input type="number" class="block-y coord" value=${stepData.y || 0} min="0" max="${editor.height}">
+      x <input type="number" class="number block-x coord" value="${stepData.x || 0}" min="0" max="${editor.width}">
+      y <input type="number" class="number block-y coord" value=${stepData.y || 0} min="0" max="${editor.height}">
       <select class="block">
         ${tileOptions}
       </select>
@@ -145,7 +146,7 @@ function getOptionHTML(stepData) {
   if (stepData.type == "delay") {
     console.log(stepData)
     html += `
-      ms <input type="number" class="ms" value="${stepData.time || 500}" min="0">
+      ms <input type="number" class="number ms" value="${stepData.time || 500}" min="0">
     `
   }
   html += `<img src="/assets/icons/delete.svg" alt="delete" class="delete-step">`
@@ -318,7 +319,9 @@ export function addEventListeners() {
   })
 
   applyButton.addEventListener('click', (e) => {
+    console.log("1")
     if (!activeTrigger) return
+    console.log("2")
 
     const newExecuteArray = []
     const stepElements = document.querySelectorAll('.steps .step')
@@ -431,6 +434,7 @@ export function addEventListeners() {
   })
 
   window.addEventListener('wheel', (e) => {
+    if (menuElement.style.display == "flex") return
     e.preventDefault()
 
     if (e.ctrlKey) {

@@ -1,5 +1,4 @@
 # **High Priority**
-- if the user isn't signed in, make ux so they can save their level
 - allow resizing of the level (I already have a function for that)
 - drag triggers around
 - fix trigger not going away after deleted

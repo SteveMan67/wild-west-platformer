@@ -130,7 +130,7 @@ export function placeTile(tx, ty) {
   if (typeIs(selected, "onePerLevel") && !tileLimitPlaced) {
     editor.limitedPlacedTiles.push(selected)
   }
-  if (typeIs(selected, "trigger")) {
+  if (mechanicsHas(selected, "trigger")) {
     addTrigger(tx, ty)
   }
 
@@ -468,6 +468,22 @@ function handleInput(timeScale) {
       editor.selection.isDragging = false
     }
     mouseDown = false
+  }
+
+  if (input.rightClick) {
+    if (!rightClick) {
+      const idx = ty * map.w + tx
+      if (tx >= 0 && tx < map.w && ty >= 0 && ty < map.h) {
+        const raw = editor.map.tiles[idx]
+        const tileId = raw >> 4
+        if (mechanicsHas(tileId, "trigger")) {
+          toggleTriggerDialog(true, tx, ty)
+        }
+      }
+      rightClick = true
+    }
+  } else {
+    rightClick = false
   }
 
   if (input.keys['r'] && selection.active && !rDown) {
