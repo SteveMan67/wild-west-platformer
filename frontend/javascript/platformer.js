@@ -329,8 +329,7 @@ function handleTriggers(tx, ty) {
         }
       }
       if (step.type == 'if') {
-        if (step.ifStatement === undefined || step.is) return
-
+        if (step.condition === undefined) return
         const cond = step.condition
         let isTrue = false
 
@@ -343,6 +342,7 @@ function handleTriggers(tx, ty) {
             }
             if (cond.property === "TILEID") {
               isTrue = player.tiles[idx] >> 4 === cond.value
+              console.log(isTrue)
             }
             if (cond.property === "ROTATION") {
               isTrue = player.tiles[idx] & 3 === cond.value

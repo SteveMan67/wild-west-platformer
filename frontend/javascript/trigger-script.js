@@ -70,6 +70,8 @@ export async function readTriggerScript(script) {
           step.rotation = parseInt(tokens[rotationIdx + 1], 10)
         }
         if (step.block || step.rotate || step.rotation) execute.push(step)
+
+        execute.push(step)
         break
       case 'IF':
         const condition = getCondition(tokens, i)
