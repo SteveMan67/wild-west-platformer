@@ -1,12 +1,12 @@
 # **High Priority**
-- allow resizing of the level (I already have a function for that)
 - drag triggers around
 - add dissipation animation
 - only highlight selected trigger (if any) and have different colors for different operations
 - add trigger limit
-- saving doesn't work correctly?
-- add share link in share menu tab with copy button
-- broke 
+- if/else in trigger
+- trigger detection
+- triggerScript
+
 
 # Finishing Touches
 - convert tiles to spritesheet
