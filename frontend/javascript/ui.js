@@ -5,8 +5,34 @@ import { canvas, drawMinimap, updateCanvasSize, updateTileset } from "./renderer
 import { toggleErase, changeSelectedTile, zoomMap, scrollCategoryTiles, undo, redo, calculateAdjacenciesForIndexes } from "/javascript/editor.js"
 import { killPlayer, mechanicsHas, typeIs } from "./platformer.js"
 import { stampSelection, updateLevelSize } from "./editor.js"
-import { readTriggerScript } from "./trigger-script.js"
+import { compileToTriggerScript, getTriggerScriptForLine, readTriggerScript } from "./trigger-script.js"
 const { user, editor, player } = state
+
+export function openMenu(menuClass) {
+  const menuOverlay = document.querySelector(".overlay")
+  const menus = document.querySelectorAll(".menu")
+  if (!menuClass) {
+    console.log(1)
+    menuOverlay.classList.add("hidden")
+    for (const menu of menus) {
+      menu.classList.add("hidden")
+    }
+  } else {
+    console.log(2)
+    menuOverlay.classList.remove("hidden")
+    for (const menu of menus) {
+      if (menu.classList.contains(menuClass)) {
+        console.log(3)
+        console.log(menuClass)
+        console.log(menu)
+        menu.classList.remove("hidden")
+        menuOverlay.classList.remove("hidden")
+      } else {
+        menu.classList.add("hidden")
+      }
+    }
+  }
+}
 
 export function toggleEditorUI(on) {
   const grid = document.querySelector(".grid")
@@ -59,26 +85,18 @@ export function sortByCategory(category) {
 let activeTrigger
 
 export function toggleTriggerDialog(open, tx, ty) {
-  const overlay = document.querySelector(".overlay")
-  const menu = document.querySelector(".menu-content")
-  const triggerDialog = document.querySelector(".trigger-dialog")
   const stepsContainer = document.querySelector(".steps")
   stepsContainer.innerHTML = ''
 
   if (open) {
-    overlay.style.display = "flex"
-    menu.style.display = "none"
-    triggerDialog.style.display = "flex"
-
+    openMenu("trigger-dialog")
     activeTrigger = player.triggers.find(f => f.x == tx && f.y == ty)
     console.log(activeTrigger)
     if (activeTrigger && activeTrigger.execute) {
       addStepsToUI(activeTrigger.execute)
     }
   } else {
-    overlay.style.display = "none"
-    menu.style.display = "none"
-    triggerDialog.style.display = "none"
+    openMenu("")
     activeTrigger = null
   }
 
@@ -119,8 +137,7 @@ function getOptionHTML(stepData) {
 
   if (stepData.type == "teleport") {
     html += `x <input type="number" class="number tp-x" value="${stepData.x || 0}" min="0" max="${editor.width}"> y <input type="number" class="number tp-y" value=${stepData.y || 0} min="0" max="${editor.height}"> instant <input type="checkbox" class="instant toggle" ${stepData.instant ? 'checked' : ''}>`
-  }
-  if (stepData.type == "rotate") {
+  } else if (stepData.type == "rotate") {
     html += `
     x <input type="number" class="number rotate-x" value="${stepData.x || 0}" min="0" max="${editor.width}">
     y <input type="number" class="number rotate-y" value=${stepData.y || 0} min="0" max="${editor.height}">
@@ -130,8 +147,7 @@ function getOptionHTML(stepData) {
       <option value="3" ${stepData.beforeRotation == 3 ? 'selected' : ''}>270</option>
     </select>
     `
-  }
-  if (stepData.type == "updateBlock") {
+  } else if (stepData.type == "updateBlock") {
     let tileOptions = ''
     for (const tile of editor.tileset) {
       tileOptions += `<option value=${tile.id} ${tile.id == stepData.block ? 'selected' : ''}>${tile.name}</option>`
@@ -143,13 +159,15 @@ function getOptionHTML(stepData) {
         ${tileOptions}
       </select>
     `
-  }
-  if (stepData.type == "delay") {
+  } else if (stepData.type == "delay") {
     console.log(stepData)
     html += `
       ms <input type="number" class="number ms" value="${stepData.time || 500}" min="0">
     `
+  } else {
+    html += getTriggerScriptForLine(stepData)
   }
+
   html += `<img src="/assets/icons/delete.svg" alt="delete" class="delete-step">`
   return html
 }
@@ -163,6 +181,7 @@ export function needsSmallerLevel() {
 }
 
 export function addEventListeners() {
+  console.log("setting event listeners")
 
   window.addEventListener("beforeunload", (e) => {
     if (editor.dirty) {
@@ -217,6 +236,8 @@ export function addEventListeners() {
 
   // page event listeners
   const menuElement = document.querySelector(".overlay")
+  const menuButton = document.querySelector(".menu-button")
+  const background = document.querySelector(".background")
   const eraserButton = document.querySelector('.eraser')
   const saveButton = document.querySelector('.save')
   const importButton = document.querySelector('.import')
@@ -278,8 +299,7 @@ export function addEventListeners() {
       })
 
       if (res.ok) {
-        overlay.style.display = "none"
-        login.classList.remove("hidden")
+        openMenu()
         const json = await res.json()
         console.log(json)
         user.id = json.id
@@ -288,10 +308,13 @@ export function addEventListeners() {
     }
   })
 
-  console.log(tsDialog)
   editWithTS.addEventListener("click", (e) => {
-    triggerDialog.style.display = 'none'
-    tsDialog.classList.remove("hidden")
+    openMenu("trigger-script")
+    tsTextarea.value = compileToTriggerScript(activeTrigger.execute)
+  })
+
+  tsTextarea.addEventListener("input", (e) => {
+    e.stopPropagation()
   })
 
   applyTS.addEventListener("click", async () => {
@@ -300,7 +323,7 @@ export function addEventListeners() {
     try {
       const execute = await readTriggerScript(text)
       activeTrigger.execute = execute
-      tsDialog.classList.add("hidden")
+      openMenu()
     } catch (e) {
       console.log(e)
       tsError.innerText = e
@@ -333,6 +356,7 @@ export function addEventListeners() {
 
 
   canvas.addEventListener("mousedown", (e) => {
+    // mmb move around
     if (e.button == 1) {
       isDraggingMap = true
       dragStart.x = e.screenX
@@ -473,7 +497,15 @@ export function addEventListeners() {
     } else {
       updateLevelSize(width, height)
     }
+    openMenu()
+  })
 
+  menuButton.addEventListener("click", () => {
+    openMenu("menu-content")
+  })
+
+  background.addEventListener("click", () => {
+    openMenu()
   })
 
   tilesetInput.addEventListener("input", () => {
@@ -517,6 +549,7 @@ export function addEventListeners() {
       if (tileCount !== 0) category.classList.add('active')
     })
     window.addEventListener('keypress', (e) => {
+      if (!overlay.classList.contains("hidden")) return
       if (e.key == String(((Array.from(categories).indexOf(category)) * -1) + categories.length) && getComputedStyle(menuElement).display === "none") {
         categories.forEach(cat => {
           cat.classList.remove('active')
@@ -528,7 +561,7 @@ export function addEventListeners() {
   })
 
   window.addEventListener('wheel', (e) => {
-    if (menuElement.style.display == "flex" || input.keys["Shift"]) return
+    if (!overlay.classList.contains("hidden") || input.keys["shift"]) return
     e.preventDefault()
 
     if (e.ctrlKey) {
@@ -625,13 +658,13 @@ export function addEventListeners() {
         editor.dirty = true
       }
 
-      if (menuElement.style.display != '' || menuElement.style.display == "none") {
-        menuElement.style.display = "none"
+      if (menuElement?.classList.contains("hidden")) {
+        openMenu()
       }
     }
   })
   document.addEventListener('keypress', (e) => {
-    if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
+    if (!menuElement?.classList?.contains("hidden")) return
     if (e.key == 'e') {
       const { selection } = editor
       if (selection.active) {
@@ -811,7 +844,6 @@ export function setInputEventListeners() {
   })
 
   window.addEventListener('keydown', e => {
-    if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
     input.keys[e.key] = true
     if (e.key == 'w' || e.key == 'd' || e.key == 'a' || e.key == 'ArrowUp' || e.key == "ArrowLeft" || e.key == "") {
       // has keyboard
@@ -822,7 +854,6 @@ export function setInputEventListeners() {
     }
   })
   window.addEventListener('keyup', e => {
-    if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
     input.keys[e.key] = false
   })
 
@@ -843,13 +874,11 @@ export function setInputEventListeners() {
     }
   })
   canvas.addEventListener('mousedown', (e) => {
-    if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
     if (e.button == 0) {
       input.down = true
     }
   })
   window.addEventListener('mouseup', (e) => {
-    if (menuElement && menuElement.style.display != '' && menuElement.style.display != "none") return
     if (e.button == 0) {
       input.down = false
     }

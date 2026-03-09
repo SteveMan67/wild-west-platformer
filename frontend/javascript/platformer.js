@@ -36,6 +36,10 @@ export function typeIs(tileId, type) {
 export function triggersAdjacency(tileId) {
   return editor.tileset[tileId] && editor.tileset[tileId].triggerAdjacency
 }
+
+/**
+ * Calculates adjacencies for the whole level
+ */
 export function calculateAdjacencies(tiles, w, h, tileset = editor.tileset) {
   let out = []
   // calculate all the adjacencies in a given level
@@ -51,6 +55,9 @@ export function calculateAdjacencies(tiles, w, h, tileset = editor.tileset) {
   return out
 }
 
+/**
+ * Calculates an adjacency for a specific tile
+ */
 export function calculateAdjacency(tileIdx, tileId, tiles = editor.map.tiles, tileset = editor.tileset, w = editor.width, h = editor.height) {
   // calculate the adjacency for a given tile 
   let variant = 0
@@ -102,6 +109,13 @@ export function calculateAdjacency(tileIdx, tileId, tiles = editor.map.tiles, ti
 
 }
 
+/**
+ * Calculates the adjacency and 4 surrounding adjacencies for a tile
+ * @param {number} idx - The index of the tile
+ * @param {number} tile - The tileId of the tile
+ * @param {Uint16Array} tiles - what tileset to use
+ * @returns The raw center tile
+ */
 export function calcAdjacentAdjacency(idx, tile = editor.selectedTile, tiles = editor.map.tiles) {
   let beforeRotation = 0
   const tileId = tiles[idx] >> 4
@@ -136,6 +150,13 @@ export function calcAdjacentAdjacency(idx, tile = editor.selectedTile, tiles = e
   return centerVal
 }
 
+/**
+ * 
+ * @param {number} heightInTiles - how high the jump should be
+ * @param {number} yInertia - the yIntertia value
+ * @param {number} tileSize - the tileSize in pixels
+ * @returns the jump height value needed for that jump height
+ */
 function getJumpHeight(heightInTiles, yInertia, tileSize) {
   const gravity = ((0.7 * yInertia) + 0.5) * (tileSize / 64)
   const heightInPixels = heightInTiles * tileSize
@@ -291,6 +312,17 @@ function checkPixelCollsion(tile, tx, ty, px, py, pw, ph) {
   return false
 }
 
+function fillSelection(startX, startY, endX, endY, tileId) {
+  console.log(startX, startY, endX, endY, tileId)
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      const idx = y * editor.width + x
+      console.log(idx)
+      calcAdjacentAdjacency(idx, tileId, player.tiles)
+    }
+  }
+}
+
 function handleTriggers(tx, ty) {
   const trigger = player.triggers.find(f => f.x == tx && f.y == ty)
   if (!trigger) return
@@ -300,6 +332,7 @@ function handleTriggers(tx, ty) {
     for (let i = startIndex; i < trigger.execute.length; i++) {
       const step = trigger.execute[i]
       if (!step) return
+      console.log(`step ${i} is type ${step.type}`)
       if (step.type == "toggleBlocks") {
         player.toggledTile = !player.toggledTile
         continue
@@ -342,24 +375,50 @@ function handleTriggers(tx, ty) {
             }
             if (cond.property === "TILEID") {
               isTrue = player.tiles[idx] >> 4 === cond.value
-              console.log(isTrue)
             }
             if (cond.property === "ROTATION") {
               isTrue = player.tiles[idx] & 3 === cond.value
             }
           }
         }
-
+        console.log(isTrue)
         if (!isTrue) {
-          let skipTo
-          for (let x = i; i < trigger.execute.length; i++) {
+          // skip to the end or the else statement
+          for (let x = i; x < trigger.execute.length; x++) {
             if (trigger.execute[x].type === "else" || trigger.execute[x].type === "end") {
-              skipTo = x
+              console.log(trigger.execute[x])
+              executeTriggerSteps(trigger, x)
+              return
+            }
+          }
+        } else {
+          player.skipElse = true
+        }
+      }
+      if (step.type == "else") {
+        console.log(player.skipElse)
+        if (player.skipElse) {
+          // if condition was true, skip this one
+          for (let x = i; x < trigger.execute.length; x++) {
+            if (trigger.execute[x].type === "end") {
+              console.log("skipping else statement")
               executeTriggerSteps(trigger, x)
               return
             }
           }
         }
+      }
+      if (step.type == "fill") {
+        if (step.startX === undefined || step.startY === undefined || step.endX === undefined || step.endY === undefined || step.block === undefined) return
+        const minX = Math.min(step.startX, step.endX)
+        const maxX = Math.max(step.startX, step.endX)
+        const minY = Math.min(step.startY, step.endY)
+        const maxY = Math.max(step.startY, step.endY)
+
+        fillSelection(minX, minY, maxX, maxY, step.block)
+      }
+      if (step.type == "end") {
+        player.skipElse = false
       }
       if (step.type == "updateBlock") {
         if (step.x == undefined || step.y == undefined || step.block == undefined) return
