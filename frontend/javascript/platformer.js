@@ -347,15 +347,16 @@ function handleTriggers(tx, ty) {
       }
       if (step.type == "change") {
         if (step.x == undefined || step.y == undefined) return
+        if (step.block !== undefined) {
+          const idx = step.y * editor.width + step.x
+          calcAdjacentAdjacency(idx, step.block, player.tiles)
+          player.tiles[idx] = step.block << 4
+        }
         if (step.rotate !== undefined) {
           rotateTile(step.x, step.y, step.rotate)
         }
         if (step.rotation !== undefined) {
           rotateTile(step.x, step.y, step.rotate)
-        }
-        if (step.block !== undefined) {
-          const idx = step.y * editor.width + step.x
-          calcAdjacentAdjacency(idx, step.block, player.tiles)
         }
       }
       if (step.type == 'if') {
