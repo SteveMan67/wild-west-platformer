@@ -68,7 +68,7 @@ const sql = postgres(DATABASE_URL)
 
 
 const server = Bun.serve({
-  port: 9020,
+  port: 1010,
   hostname: "0.0.0.0",
   routes: {
 
