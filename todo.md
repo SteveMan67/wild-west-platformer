@@ -1,6 +1,4 @@
 # Bug Fixes
-- fix walljump coyote timer
-- level rendering gets broken if you resize, edit doesn't change width and height
 - trigger detection
 - add trigger limit
 
@@ -18,6 +16,8 @@
 **Level Share**
 - pages in level share
 - color scheme + switching
+- save color scheme in server and automatically set the
+- options page 
 
 **Editor**
 - drag minimap around

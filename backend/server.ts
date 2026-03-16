@@ -1,6 +1,26 @@
 import postgres from "postgres"
 import { authenticate, type authResponse, getCookies } from "./auth.ts"
-import { hash } from "bun";
+
+async function serveFile(req: Request, filePath: string) {
+  let theme = 'cream'
+
+  const auth = await authenticate(req);
+  if (auth?.signedIn) {
+    const userRows = await sql`SELECT preferred_theme from users where id = ${auth.user}`
+    if (userRows.length > 0 && userRows[0].preferred_theme !== "" && userRows[0].preferred_theme !== null) {
+      theme = userRows[0].preferred_theme
+    }
+  }
+  const file = Bun.file(filePath)
+  let htmlText = await file.text()
+
+  htmlText = htmlText.replace(/<html([^>]*)>/i, `<html$1 data-theme="${theme}">`);
+
+  return new Response(htmlText, {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  })
+
+}
 
 function cleanString(str: String) {
   return String(str)
@@ -55,30 +75,30 @@ const server = Bun.serve({
     // --- login page --
     "/login": async (req) => {
       if ((await authenticate(req))?.signedIn) {
-        return new Response(Bun.file("./frontend/index.html"))
+        return await serveFile(req, "frontend/index.html")
       } else {
-        return new Response(Bun.file("./frontend/login.html"))
+        return await serveFile(req, "frontend/login.html")
       }
     },
     // -- editor page --
-    "/editor": async () => {
-      return new Response(Bun.file("./frontend/editor.html"))
+    "/editor": async (req) => {
+      return await serveFile(req, "frontend/editor.html")
     },
-    "/register": async () => {
-      return new Response(Bun.file("./frontend/register.html"))
+    "/register": async (req) => {
+      return await serveFile(req, "frontend/register.html")
     },
     "/myLevels": async (req) => {
       if ((await authenticate(req))?.signedIn) {
-        return new Response(Bun.file("./frontend/user.html"))
+        return await serveFile(req, "frontend/user.html")
       } else {
-        return new Response(Bun.file("./frontend/login.html"))
+        return await serveFile(req, "frontend/login.html")
       }
     },
-    "/new": () => {
-      return new Response(Bun.file("./frontend/new-level.html"))
+    "/new": async (req) => {
+      return await serveFile(req, "frontend/new-level.html")
     },
-    "/": async () => {
-      return new Response(Bun.file("./frontend/index.html"))
+    "/": async (req) => {
+      return await serveFile(req, "frontend/index.html")
     },
   },
   async fetch(req) {
@@ -96,11 +116,11 @@ const server = Bun.serve({
     };
 
     if (pathname.startsWith("/editor")) {
-      return new Response(Bun.file("frontend/editor.html"))
+      return await serveFile(req, "frontend/editor.html")
     }
 
     if (pathname.startsWith("/meta") && req.method == "GET") {
-      return new Response(Bun.file("frontend/level-meta.html"))
+      return await serveFile(req, "frontend/level-meta.html")
     }
 
     if (req.method == "OPTIONS") {
@@ -108,7 +128,7 @@ const server = Bun.serve({
     }
 
     if (pathname == "/level" || pathname.startsWith("/level/")) {
-      return new Response(Bun.file("./frontend/level.html"))
+      return await serveFile(req, "frontend/level.html")
     }
 
     // --- health ---
